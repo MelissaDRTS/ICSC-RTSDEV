@@ -1,0 +1,112 @@
+<apex:page id="page" showheader="false" sidebar="false" standardstylesheets="false" controller="PaymentDistributionController">
+    <apex:stylesheet value="{!URLFOR($Resource.slds, 'assets/styles/salesforce-lightning-design-system.css')}" />
+    <nav role="navigation" aria-label="Breadcrumbs">
+        <ol class="slds-breadcrumb slds-list--horizontal">
+            <li class="slds-breadcrumb__item slds-text-heading--label"><a href="{!URLFOR($Action.Account.Tab, $ObjectType.Account)}">Accounts</a></li>
+            <li class="slds-breadcrumb__item slds-text-heading--label"><a href="/{!paymentAccount.id}">{!paymentAccount.Name}</a></li>
+            <li class="slds-breadcrumb__item slds-text-heading--label"><a>Payment Distribution</a></li>
+        </ol>
+    </nav>
+    <div class="slds-spinner_container slds-hide" style="position:fixed;">
+        <div class="slds-spinner--brand slds-spinner slds-spinner--large" aria-hidden="false" role="alert">
+            <div class="slds-spinner__dot-a"></div>
+            <div class="slds-spinner__dot-b"></div>
+        </div>
+    </div>
+    <apex:actionStatus id="actionStatus" onstart="showSpinner();" onstop="hideSpinner();" />
+    <apex:outputPanel id="abc">
+        <div class="slds-page-header" role="banner">
+            <div class="slds-media slds-media--center">
+                <div class="slds-media__body">
+                    <p class="slds-page-header__title slds-truncate slds-align-middle">
+                        {!paymentAccount.Name} - ${!availableAmount} Available for distribution
+                    </p>
+                </div>
+            </div>
+        </div>
+        <apex:form >
+            <apex:commandButton title="View Applied Payments" status="actionStatus" value="View Applied Payments" action="{!apRedirect}" style="float:right;" styleClass="slds-button slds-button--brand"/>
+            <apex:commandButton title="Distribute Payments" status="actionStatus" value="Distribute Payments" action="{!distributePayments}" style="float:right; margin-right:10px;" styleClass="slds-button slds-button--brand"/>
+            <apex:commandButton title="Save Distribution" status="actionStatus" value="Save Distribution" action="{!saveDistribution}" style="float:right; margin-right:10px;" styleClass="slds-button slds-button--brand"/>
+            <apex:outputPanel rendered="{!totalDue == 0}">
+                <div style="float:left; layout:block; clear:both; position:relative;" class="slds-notify_container">
+                    <div class="slds-notify slds-notify--toast slds-theme--info slds-theme--alert-texture" role="alert">
+                        <div class="slds-notify__content slds-grid">
+                            <div class="slds-col slds-align-middle">
+                                <h2 class="slds-text-heading--small">No outstanding order items on this account</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>   
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!totalDue > 0}">
+                <table id="Table" class="slds-table slds-table slds-table--bordered slds-table--striped">
+                    <thead>
+                        <tr style="text-align: center;">
+                            <th>Advertiser</th>
+                            <th>Invoice Number</th>
+                            <th>Show/Publication</th>
+                            <th>Balance Remaining</th>
+                            <th>Amount Distributed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <apex:repeat value="{!orderItemsForDisplay}" var="orderItem">
+                                <tr style="text-align: center;">
+                                    <td><a href="/{!orderItem.id}">{!orderItem.PricebookEntry.Product2.Name}</a></td>
+                                    <td>{!orderItem.OrderItemNumber}</td>
+                                    <td><a href="/{!orderItem.SHow_Event_Publication__r.Id}">{!orderItem.Show_Event_Publication__r.Name}</a></td>
+                                    <td>${!orderItem.Balance_Due__c}</td>
+                                    <td>
+                                            <apex:inputText id="number" value="{!orderItem2pay[orderItem.Id]}"/>
+                                    </td>
+                                </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+                <apex:commandLink value=" <<First | " action="{!first}" status="actionStatus" reRender="abc"/>
+                <apex:commandLink value=" <Previous | " action="{!previous}" rendered="{!hPrev}" status="actionStatus" reRender="abc"/>
+                <apex:selectList value="{!pageSelected}" multiselect="false" size="1">
+                    <apex:actionSupport event="onchange" action="{!pageSelect}" reRender="abc" status="actionStatus"/>
+                    <apex:SelectOptions value="{!pageNumbers}"/>
+                </apex:selectList>
+                <apex:commandLink value=" | Next> " action="{!next}" rendered="{!hNext}" status="actionStatus" reRender="abc"/>
+                <apex:commandLink value=" | Last>> " action="{!last}" status="actionStatus" reRender="abc"/>
+                <apex:commandButton title="View Applied Payments" status="actionStatus" value="View Applied Payments" action="{!apRedirect}" style="float:right;" styleClass="slds-button slds-button--brand"/>
+                <apex:commandButton title="Distribute Payments" status="actionStatus" value="Distribute Payments" action="{!distributePayments}" style="float:right; margin-right:10px;" styleClass="slds-button slds-button--brand"/>
+                <apex:commandButton title="Save Distribution" status="actionStatus" value="Save Distribution" action="{!saveDistribution}" style="float:right; margin-right:10px;" styleClass="slds-button slds-button--brand"/>
+            </apex:outputPanel>
+        </apex:form>
+        <apex:outputPanel style="layout:block; clear:both; position:relative;" rendered="{!error}">
+            <div style="float:left; layout:block; clear:both; position:relative;" class="slds-notify_container">
+                <div class="slds-notify slds-notify--toast slds-theme--error slds-theme--alert-texture" role="alert">
+                    <div class="slds-notify__content slds-grid">
+                        <div class="slds-col slds-align-middle">
+                            <h2 class="slds-text-heading--small"><apex:pageMessages /></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </apex:outputPanel>
+    </apex:outputPanel>
+    <script>
+    function showSpinner(){
+        console.log('showSpinner');
+        var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+        spinner.className = 'slds-spinner_container slds-show';
+    }
+    function hideSpinner(){
+        console.log('hideSpinner');
+        var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+        spinner.className = 'slds-spinner_container slds-hide';
+    }
+    </script>
+    <style type="text/css">
+        #Table > tbody > tr:hover > td{
+            background-color:#99ccff;
+        }
+        h4{
+            color:white;
+        }
+    </style>
+</apex:page>

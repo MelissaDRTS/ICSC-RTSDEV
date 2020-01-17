@@ -1,0 +1,277 @@
+<apex:page showHeader="false" standardStylesheets="false" sidebar="true"
+           readOnly="true" controller="ShowPublicationFinancialSummaryCtrl" id="ProductionReport">
+    <link rel="stylesheet"
+          href="https://s3.amazonaws.com/icomoon.io/83505/SLDS/style.css?vtknfp"/>
+    <div class="slds-spinner_container slds-hide">
+        <div class="slds-spinner--brand slds-spinner slds-spinner--large"
+             aria-hidden="false" role="alert">
+            <div class="slds-spinner__dot-a"></div>
+            <div class="slds-spinner__dot-b"></div>
+        </div>
+    </div>
+    <apex:stylesheet value="{!URLFOR($Resource.slds, 'assets/styles/salesforce-lightning-design-system.css')}" />
+    <div class="slds">
+        <apex:outputPanel id="modalContainer">
+            <apex:outputPanel rendered="{!showModal && notesToDisplay != null}">
+                <div class="slds-backdrop slds-backdrop--open"></div>
+                <div class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__header" xmlns="http://www.w3.org/2000/svg"
+                             xmlns:xlink="http://www.w3.org/1999/xlink">
+                            <apex:form >
+                                <apex:commandLink action="{!toggleModal}"
+                                                  styleClass="slds-button slds-modal__close slds-button--icon--inverse"
+                                                  title="Close">
+                                    <i class="icon-action_close slds-button__icon slds-button__icon--large" />
+                                </apex:commandLink>
+                            </apex:form>
+                            <h2 class="slds-text-heading--medium">Accounting Notes</h2>
+                        </div>
+                        <div class="slds-modal__content slds-p-around--medium">
+                            <apex:outputText value="{!notesToDisplay}" />
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <apex:outputPanel id="buttons" styleClass="bottomNavLinks"
+                          layout="block">
+            <a href="/apex/SalesJournal?id={!showPublicationId}">Sales
+                Journal →</a>
+            <a href="/apex/ShowpubRedirect?id={!showPublicationId}">Invoice
+                Distribution →</a>
+        </apex:outputPanel>
+        <apex:pageBlock >
+            <apex:facet name="header">
+                <div class="pbHeader">
+                    <a href="/{!showPublication.Id}">{!showPublication.Name}</a>
+                    &raquo; Production Report
+                </div>
+            </apex:facet>
+            <apex:outputPanel style="layout:block; clear:both; position:relative;"
+                              rendered="{!orderItems.size==0}">
+                <div
+                        style="float: left; layout: block; clear: both; position: relative;"
+                        class="slds-notify_container">
+                    <div
+                            class="slds-notify slds-notify--toast slds-theme--error slds-theme--alert-texture"
+                            role="alert">
+
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading--small">
+                                <apex:pageMessages ></apex:pageMessages>
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!AND(showPublicationId != null, orderItems.size > 0)}">
+                <div style="text-align: center;">
+                    <h2>PRODUCTION REPORT FOR: {!showPublication.Name}</h2>
+                </div>
+                <div class="infoHeader">
+                    <span>SORT: Alpha </span> <span>COVER DATE: <apex:outputField value="{!showPublication.Show_Start_Date__c}" /></span> <span>THEME
+						OF ISSUE: </span>
+                    <apex:outputPanel id="PageNum" style="white-space:nowrap;">
+                        <span>Page {!currentPage + 1} of {!lastPage + 1}</span>
+                    </apex:outputPanel>
+                    <span>PRINTED: <apex:outputText value="{!printedDate}" /></span>
+                </div>
+                <apex:outputPanel id="TableDiv">
+                    <table id="Table"
+                           style="font-size: 10px; border-spacing: 0; border-collapse: collapse;"
+                           class="slds-table  slds-table--bordered slds-table--striped">
+                        <thead>
+                        <tr class="slds-text-heading--label" style="font-size: 10px;">
+                            <th><apex:outputtext style="white-space:pre-wrap; word-wrap:break-word;"
+                                                 value="Order Number" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Adv Id" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Advertiser" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Agency" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Sales Rep" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Description" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Size" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Space" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Color" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Pages" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Position" /></th>
+                            <th><apex:outputtext style="white-space:pre-wrap;"
+                                                 value="Bleed" /></th>
+                            <!--<th><apex:outputtext style="white-space:pre-wrap;"-->
+                                                 <!--value="DOC" /></th>-->
+                            <!--<th><apex:outputtext style="white-space:pre-wrap;"-->
+                                                 <!--value="MAT" /></th>-->
+                            <!--<th><apex:outputtext style="white-space:pre-wrap;"-->
+                                                 <!--value="PRQ" /></th>-->
+                            <!--<th><apex:outputtext style="white-space:pre-wrap;"-->
+                                                 <!--value="POK" /></th>-->
+                            <!--<th><apex:outputtext style="white-space:pre-wrap;"-->
+                                                 <!--value="SET-KEY NO" /></th>-->
+                            <th><apex:outputtext style="white-space:pre-wrap; word-wrap:break-word;"
+                                                 value="Notes" /></th>
+                            <!--<th><apex:outputtext style="white-space:pre-wrap; word-wrap:break-word;"-->
+                                                 <!--value="Ad Id" /></th>-->
+                            <th><apex:outputtext style="white-space:pre-wrap; word-wrap:break-word;"
+                                                 value="Io.No" /></th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        <apex:repeat value="{!rows}" var="row">
+                            <tr style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}">
+                                <apex:variable value="{!0}" var="display2"
+                                               rendered="{!row.isTotalRow}">
+                                    <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}"
+                                        class="slds-cell-wrap nohover"><apex:outputtext style="font-size:12px; font-weight: bold;" value="TOTALS" />
+                                    </td>
+                                </apex:variable>
+                                <td style="{!IF(row.isTotalRow, 'display:none;', '')}" class="slds-cell-wrap"><a
+                                        title="{!row.orderNumber}" href="/{!row.orderId}">{!row.orderNumber}</a>
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Adv Id"><apex:outputtext value="{!row.advId}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Advertiser"><apex:outputtext value="{!row.advertiser}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Agency"><apex:outputtext value="{!row.agency}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Sales Rep"><apex:outputtext value="{!row.rep}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Description"><apex:outputtext value="{!row.orderProductDescription}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Size"><apex:outputtext value="{!row.size}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Space"><apex:outputtext value="{!row.space}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Color"><apex:outputtext value="{!row.color}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Pages"><apex:outputtext rendered="{!NOT(ISNULL(row.pages))}">{!row.pages}pg</apex:outputtext></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Position"><apex:outputtext value="{!row.position}" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Bleed"><apex:outputtext rendered="{!row.bleed}" value="Yes" /> <apex:outputtext rendered="{!!row.bleed}" value="No" /></td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="Notes"><apex:outputtext value="{!row.notes}" /></td>
+                                <td colspan="2" style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" name="IO Number"><apex:outputtext value="{!row.insertionOrderNumber}"/></td>
+                            </tr>
+                        </apex:repeat>
+                        </tbody>
+                    </table>
+                </apex:outputPanel>
+                <apex:outputPanel id="links">
+                    <apex:form >
+                        <apex:commandLink value="<<First | " action="{!first}"
+                                          status="actionStatus"
+                                          reRender="PageNum, TableDiv, links, buttons" />
+                        <apex:commandLink value="<Previous " action="{!previous}"
+                                          status="actionStatus" rendered="{!hPrev}"
+                                          reRender="PageNum, TableDiv, links, buttons" />
+                        <apex:selectList styleClass="slds-pickist" value="{!pageSelected}"
+                                         multiselect="false" size="1">
+                            <apex:actionSupport event="onchange" action="{!pageSelect}"
+                                                reRender="PageNum, TableDiv, buttons, links, actionStatus"
+                                                status="actionStatus" />
+                            <apex:SelectOptions value="{!pageNumbers}" />
+                        </apex:selectList>
+                        <apex:commandLink value="Next>" style="padding-left: 10px;"
+                                          action="{!next}" status="actionStatus" rendered="{!hNext}"
+                                          reRender="PageNum, TableDiv, buttons, links" />
+                        <apex:commandLink style="padding-right:20px;" value=" | Last>>"
+                                          action="{!last}" status="actionStatus"
+                                          reRender="PageNum, TableDiv, buttons, links" />
+                        <apex:commandButton style="float:right; margin-right: 10px;"
+                                            styleClass="slds-button slds-button--brand" value="View as PDF"
+                                            action="{!goToPdf}" />
+                    </apex:form>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:pageBlock>
+        <apex:actionStatus id="actionStatus" onstart="showSpinner();"
+                           onstop="hideSpinner();" />
+
+    </div>
+
+
+    <script>
+        function showSpinner(){
+            console.log('showSpinner');
+            var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+            spinner.className = 'slds-spinner_container slds-show';
+        }
+
+        function hideSpinner(){
+            console.log('hideSpinner');
+            var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+            spinner.className = 'slds-spinner_container slds-hide';
+        }
+    </script>
+
+
+    <style>
+        .bottomNavLinks {
+            text-align: center;
+            width: 100%;
+            font-size: 1.25em;
+        }
+
+        .icon-file-text2:before {
+            content: "\e926";
+        }
+
+        .icon-pencil:before {
+            content: "\e905";
+        }
+
+        div.infoHeader {
+            border-top: 3px solid black;
+            border-bottom: 3px solid black;
+            width: 100%;
+        }
+
+        body.overviewPage .bPageBlock .pbTitle, body.overviewPage .bRelatedList .bPageBlock .pbTitle,
+        body.homeTab .bPageBlock .pbTitle, body.homeTab .bRelatedList .bPageBlock .pbTitle
+        {
+            width: 100%;
+        }
+
+        .slds-spinner_container {
+            position: fixed;
+        }
+
+        div.infoHeader span {
+            width: 19%;
+            display: inline-block;
+        }
+
+        .tableHeader {
+            border-bottom: 1px solid black;
+        }
+
+        .pbHeader {
+            font-size: 1.25em;
+            padding-left: 0.5em;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+        }
+
+        #Table>thead>tr>th {
+            text-align: center;
+        }
+
+        #Table>tbody>tr>td {
+            text-align: center;
+        }
+
+        #Table>tbody>tr:not (.nohover ):hover>td {
+            background-color: #99ccff;
+        }
+        td.notes-cell{
+            display: table-cell;
+            padding-left: 50px;
+            padding-right: 50px;
+            overflow-x: wrap;
+        }
+        tr.slds-show.notes-row{
+            display:table-row;
+        }
+    </style>
+
+</apex:page>

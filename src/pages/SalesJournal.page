@@ -1,0 +1,237 @@
+<apex:page showHeader="false" sidebar="false" standardStylesheets="false" controller="SalesJournalController">
+    
+    <apex:outputPanel styleClass="bottomNavLinks" layout="block">
+        <a href="/apex/ShowPublicationFinancialSummary?id={!show.Id}">←	Financial Summary</a>&nbsp;&nbsp;
+        <a href="/apex/ShowpubRedirect?id={!show.Id}">Invoice Distribution →</a>
+    </apex:outputPanel>
+    <apex:PageBlock >
+        <apex:facet name="header">
+            <div class="headerText">
+                <a href="/{!show.Id}">{!show.Name}</a> &raquo; Sales Journal
+            </div>
+        </apex:facet>
+    </apex:PageBlock>
+    
+    <apex:outputPanel style="layout:block; clear:both; position:relative;" rendered="{!orderItems.size==0}">
+        <div style="float:left; layout:block; clear:both; position:relative;" class="slds-notify_container">
+            <div class="slds-notify slds-notify--toast slds-theme--error slds-theme--alert-texture" role="alert">
+                <div class="slds-notify__content">
+                    <h2 class="slds-text-heading--small"><apex:pageMessages ></apex:pageMessages></h2>
+                </div>
+            </div>
+        </div>
+    </apex:outputPanel>
+    <apex:outputPanel id="table" rendered="{!(orderItems.size > 0)}">
+        <apex:form >
+            <apex:pageBlock >
+                <table id="Table" class="slds-table slds-table--bordered slds-table--striped slds-no-row-hover">
+                    <thead>
+                        <tr class="slds-text-heading--label">
+                            <th>Item#</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Inv Date</th>
+                            <th>Inv#</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Cover Date</th>
+                            <th>Advertiser</th>
+                            <th>Bill</th>
+                            <th>Agency</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Ad Size</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Space Chg</th>
+                            <th>Color</th>
+                            <th>Chg</th>
+                            <th>Bleed</th>
+                            <th>Chg</th>
+                            <th>Position</th>
+                            <th>Chg</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Media Total</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Prod Chg</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Order TTL</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Disc Total</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Tax Cost</th>
+                            <th style="white-space:pre-wrap; word-wrap:break-word;">Net Total</th>
+                            <th>Authorized</th>
+                            <th>Selected
+                                <input type="checkbox" onchange="changeSelectAll();" id="selectAllBox"/>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <apex:repeat value="{!rows}" var="row">
+                            <tr style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}">
+                                <apex:variable value="{!0}" var="display" rendered="{!NOT(row.isTotalRow)}">
+                                    <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap"><apex:outputLink value="/{!row.orderItemId}">{!row.orderItemNumber}</apex:outputLink></td>
+                                </apex:variable>
+                                <apex:variable value="{!0}" var="display2" rendered="{!row.isTotalRow}">
+                                    <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap nohover"> <apex:outputtext styleClass="totallabel" value="TOTALS" /> </td>
+                                </apex:variable>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" >
+                                    {!row.invDate}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" >
+                                    <a title="{!row.invNumber}" href="/{!row.invId}">{!row.invNumber}</a>
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap" >
+                                    {!row.coverDate}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    <apex:outputLink rendered="{!!row.isTotalRow}">
+                                        <a title="!{row.advertiser}" href="/{!row.accountId}">{!row.advertiser}</a>
+                                    </apex:outputLink>
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    <apex:outputText rendered="{!row.bill && !row.isTotalRow}"  styleClass="checkmark"/>
+                                    <apex:outputText rendered="{!!row.bill && !row.isTotalRow}" styleClass="xmark"/>
+                                </td>
+                                <td class="slds-cell-wrap" style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}">
+                                    {!row.agency}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    {!row.adSize}
+                                </td>
+                                <td class="slds-cell-wrap" style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}">
+                                    <apex:outputText value="{0, number, currency}">
+                                        <apex:param value="{!row.spaceChg}" />
+                                    </apex:outputText>
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    {!row.color}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    {!row.colorChg}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    <apex:outputText rendered="{!row.bleed && !row.isTotalRow}"  styleClass="checkmark"/>
+                                    <apex:outputText rendered="{!!row.bleed && !row.isTotalRow}" styleClass="xmark"/>
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    {!row.bleedChg}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    {!row.position}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    {!row.positionChg}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    <apex:outputText value="{0, number, currency}">
+                                        <apex:param value="{!row.mediaTotal}"/>
+                                    </apex:outputText>                                
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    {!row.prodChg}
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">{!row.orderTtl}</td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">                        
+                                    <apex:outputText value="{!row.discTotal}%" rendered="{!row.discTotal != null}"/>
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">{!row.taxCost}</td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    <apex:outputText value="{0, number, currency}">
+                                        <apex:param value="{!row.netTotal}"/>
+                                    </apex:outputText>
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    <apex:outputText rendered="{!row.authorized && !row.isTotalRow}"  styleClass="checkmark"/>
+                                    <apex:outputText rendered="{!!row.authorized && !row.isTotalRow}" styleClass="xmark"/>
+                                </td>
+                                <td style="{!IF(row.isTotalRow, 'background-color:#1798c1; color:white;', '')}" class="slds-cell-wrap">
+                                    <apex:inputCheckbox value="{!row.selected}" rendered="{!NOT(row.authorized) && row.invId != null}" styleClass="selectBox"/>
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+                <apex:commandLink action="{!first}" status="actionStatus" value="<<First | " reRender="table, actionStatus"/>
+                <apex:commandLink action="{!previous}" status="actionStatus" rendered="{!hPrev}" value="<Previous  " reRender="table, actionStatus"/>
+                <apex:selectList styleClass="slds-pickist" value="{!pageSelected}" multiselect="false" size="1">
+                    <apex:actionSupport event="onchange" action="{!pageSelect}" reRender="table, actionStatus" status="actionStatus"/>
+                    <apex:SelectOptions value="{!pageNumbers}" />
+                </apex:selectList>
+                <apex:commandLink action="{!next}" status="actionStatus" value=" Next>" rendered="{!hNext}" reRender="table, actionStatus"/>
+                <apex:commandLink action="{!last}" status="actionStatus" value=" | Last>>" reRender="table, actionStatus"/>
+                <apex:commandButton style="float:right; margin-right:5px;"  styleClass="slds-button slds-button--brand" value="Generate Invoice Records Where Missing" reRender="table, actionStatus" status="actionStatus" action="{!generateInvoices}"/>
+                <apex:commandButton style="float:right; margin-right:10px;"  styleClass="slds-button slds-button--brand" value="Authorize Selected Invoices for Printing" status="actionStatus" action="{!authorizeInvoices}"/>
+                
+            </apex:pageBlock>
+        </apex:form>
+        
+        <apex:actionStatus id="actionStatus" onstart="showSpinner();" onstop="hideSpinner();" />    
+    </apex:outputPanel>
+    <div class="slds-spinner_container slds-hide" style="position:fixed;">
+        <div class="slds-spinner--brand slds-spinner slds-spinner--large" aria-hidden="false" role="alert">
+            <div class="slds-spinner__dot-a"></div>
+            <div class="slds-spinner__dot-b"></div>
+        </div>
+    </div>
+    <apex:stylesheet value="{!URLFOR($Resource.slds, 'assets/styles/salesforce-lightning-design-system.css')}"/>
+    
+    
+    <script>
+    function showSpinner(){
+        console.log('showSpinner');
+        var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+        spinner.className = 'slds-spinner_container slds-show';
+    }
+    
+    function hideSpinner(){
+        console.log('hideSpinner');
+        var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+        spinner.className = 'slds-spinner_container slds-hide';
+    }
+    </script>
+    
+    <style>
+        td{
+        height:1.5em;
+        text-align:center;
+        }
+        th{
+        text-align:center;
+        
+        }
+        h2{
+        font-size: 1.3em;
+        padding-left:0.5em;
+        padding-top:0.5em;
+        }
+        .checkmark:before{
+        content:'✓';
+        color:green;
+        }
+        .xmark:before{
+        content:'✘';
+        color:red;
+        }
+        .slds-spinner_container {position:fixed;}
+        .bottomNavLinks{
+        text-align:center;
+        width:100%;
+        font-size:1.25em;
+        }
+        .headerText{
+        font-size: 1.5em;
+        padding-left: 0.5em;
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+        }
+        .totallabel{
+        font-size: 1.25em;
+        font-weight: bold;
+        }
+        .headerRow{
+        text-align: center;
+        }
+       #Table > tbody > tr:not(.nohover):hover >td{
+        background-color:#99ccff;
+        }
+    </style>
+    
+    <script>
+    function changeSelectAll(){
+        var selectAllBox = document.getElementById("selectAllBox");
+        var checkboxes = document.getElementsByClassName("selectBox");
+        for(var i in checkboxes){
+            checkboxes[i].checked = selectAllBox.checked;
+        }
+    }
+    </script>
+</apex:page>

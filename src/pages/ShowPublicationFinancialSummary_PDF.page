@@ -1,0 +1,167 @@
+<apex:page controller="ShowPublicationFinancialSummaryCtrl" renderAs="pdf" standardstylesheets="false" applybodytag="false" showheader="false" applyhtmltag="false">
+    <!-- applyBodyTag="false" -->
+    <head>
+        <style type="text/css">
+            @page {
+                margin: 0;
+                size: A4 landscape;
+            }
+
+
+            div.infoHeader {
+                border-top: 3px solid black;
+                border-bottom: 3px solid black;
+                width: 100%;
+            }
+
+                div.infoHeader span {
+                    width: 19%;
+                    display: inline-block;
+                }
+
+            .tableHeader {
+                border-bottom: 1px solid black;
+                text-align: center;
+            }
+			table{page-break-inside:auto;}
+            thead > tr > th {
+                vertical-align: bottom;
+                border: 1px solid #000;
+                border-spacing: 0;
+                text-align: center;
+                border-collapse: collapse;
+            }
+			tr    { page-break-inside:avoid; page-break-after:auto; }
+            td {
+                border-left: 1px solid #000;
+                text-align: center;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div style="text-align:center;">
+            <h2>FINANCIAL SUMMARY FOR: {!showPublication.Name}</h2>
+        </div>
+        <div class="infoHeader">
+            <span>SORT: Alpha</span>
+            <span>COVER DATE: <apex:outputfield value="{!showPublication.Show_Start_Date__c}" /></span>
+            <span>THEME OF ISSUE: </span>
+            <span>Page 1</span>
+            <span>PRINTED: <apex:outputtext value="{!printedDate}" /></span>
+        </div>
+        <div class="table">
+            <table style="font-size: 10px; border-collapse: collapse; border-spacing: 0;">
+                <thead>
+                    <tr>
+                        <th > <apex:outputtext value="Advertiser" /> </th>
+                        <th > <apex:outputtext value="Agency" /> </th>
+                        <th> <apex:outputtext value="Size" /> </th>
+                        <th> <apex:outputtext value="Space" /> </th>
+                        <th> <apex:outputtext value="Color" /> </th>
+                        <th> <apex:outputtext value="Pages" /> </th>
+                        <th> <apex:outputtext value="Chg" /> </th>
+                        <th> <apex:outputtext value="Position" /> </th>
+                        <th> <apex:outputtext value="Chg" /> </th>
+                        <th> <apex:outputtext value="Bleed" /> </th>
+                        <th> <apex:outputtext value="Chg" /> </th>
+                        <th> <apex:outputtext value="Total Media" /> </th>
+                        <th> <apex:outputtext value="Discount" /> </th>
+                        <th> <apex:outputtext value="Chg" /> </th>
+                        <th> <apex:outputtext value="Net Media Production" /> </th>
+                        <th> <apex:outputtext value="Chg" /> </th>
+                        <th> <apex:outputtext value="GR Order TTL" /> </th>
+                        <th> <apex:outputtext value="Bill" /> </th>
+                        <th> <apex:outputtext value="Project Net" /> </th>
+                        <th> <apex:outputtext value="Io.No" /> </th>
+                        <th> <apex:outputtext value="Rep" /> </th>
+                        <th> <apex:outputtext value="Order Number" /> </th>
+                        <th> <apex:outputtext value="Item Number" /> </th>
+                        <th> <apex:outputtext value="Invoice" /> </th>
+                        <th > <apex:outputtext style="white-space:pre-wrap;" value="Attachment" /> </th>
+                        <th style="white-space:no-wrap;"> <apex:outputtext value="CVR DT Entry Date" /> </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <apex:variable value="{!1}" var="r" />
+                    <apex:repeat value="{!rows}" var="row">
+                        <tr style="background-color:{!(IF(MOD(r,2)==0, '#F0EFF5',''))};">
+                            <apex:variable value="{!0}" var="display" rendered="{!NOT(row.isTotalRow)}">
+                                <td> <apex:outputtext value="{!row.advertiser}" /> </td>
+                            </apex:variable>
+                            <apex:variable value="{!0}" var="display2" rendered="{!row.isTotalRow}">
+                                <td> <apex:outputtext value="TOTALS" /> </td>
+                            </apex:variable>
+                            <td> <apex:outputtext value="{!row.agency}" /> </td>
+                            <td> <apex:outputtext value="{!row.size}" /> </td>
+                            <td> <apex:outputtext value="{!row.space}" /> </td>
+                            <td> <apex:outputtext value="{!row.color}" /> </td>
+                            <td>
+                                <apex:outputtext rendered="{!NOT(ISNULL(row.pages))}">{!row.pages}pg</apex:outputtext>
+                            </td>
+                            <td> <apex:outputtext value="{!row.chg1}" /> </td>
+                            <td> <apex:outputtext value="{!row.position}" /> </td>
+                            <td> <apex:outputtext value="{!row.chg2}" /> </td>
+                            <td>
+                                <apex:outputtext rendered="{!row.bleed}" value="Yes" />
+                                <apex:outputtext rendered="{!!row.bleed}" value="No" />
+                            </td>
+                            <td> <apex:outputtext value="{!row.chg3}" /> </td>
+                            <td>
+                                <apex:outputtext value="{0, number, currency}">
+                                    <apex:param value="{!row.totalMedia}" />
+                                </apex:outputtext>
+                            </td>
+                            <td>
+                                <apex:outputtext value="{!row.discount}%" rendered="{!row.discount != null}" />
+                            </td>
+                            <td>
+                                <apex:outputtext value="({!row.chg4})" rendered="{!row.chg4 != null}" />
+                            </td>
+                            <td>
+                                <apex:outputtext value="{0, number, currency}">
+                                    <apex:param value="{!row.netMedia}" />
+                                </apex:outputtext>
+                            </td>
+                            <td>
+                                <apex:outputtext value="({!row.chg5})" rendered="{!row.chg5 != null}" />
+                            </td>
+                            <td>
+                                <apex:outputtext value="{0, number, currency}">
+                                    <apex:param value="{!row.grossOrderTotal}" />
+                                </apex:outputtext>
+                            </td>
+                            <td> <apex:outputtext value="{!row.bill}" /> </td>
+                            <td>
+                                <apex:outputtext value="{0, number, currency}">
+                                    <apex:param value="{!row.projectNet}" />
+                                </apex:outputtext>
+                            </td>
+                            <td> <apex:outputtext value="{!row.insertionOrderNumber}" /></td>
+                            <td> <apex:outputtext value="{!row.rep}" /></td>
+                            <td>
+                                <a href="/{!row.orderId}">{!row.orderNumber}</a>
+                            </td>
+                            <td>
+                                <a href="/{!row.item.Id}">{!row.orderItemNumber}</a>
+                            </td>
+                            <td>
+                                <a href="/{!row.invoice.Id}">{!row.invoice.Name}</a>
+                            </td>
+                            
+                            <td>
+                                <a href="{!'/servlet/servlet.FileDownload?file=' + row.attachmentId}">
+                                    {!row.attachmentName}
+
+                                </a>
+
+                            </td>
+                            <td style="white-space:no-wrap;"> <apex:outputtext value="{!row.coverDate}" /> </td>
+                        </tr>
+                        <apex:variable value="{!r+1}" var="r" />
+                    </apex:repeat>
+                </tbody>
+            </table>
+        </div>
+    </body>
+</apex:page>

@@ -1,0 +1,457 @@
+<apex:page controller="AddProductWizardController" docType="html-5.0" sidebar="false" >
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"/>
+   <apex:includeScript value="{!URLFOR($Resource.Bootstrap3_0_2, 'bootstrap-3.0.2/js/bootstrap.min.js')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.Bootstrap3_0_2, 'bootstrap-3.0.2/css/bootstrap-btg-force.css')}"/>
+   <style>
+  	.btg-force {width: 98%; margin-left: auto; margin-right: auto;}
+  	.table>thead>tr>td.info, .table>tbody>tr>td.info, .table>tfoot>tr>td.info, .table>thead>tr>th.info, .table>tbody>tr>th.info, .table>tfoot>tr>th.info, .table>thead>tr.info>td, .table>tbody>tr.info>td, .table>tfoot>tr.info>td, .table>thead>tr.info>th, .table>tbody>tr.info>th, .table>tfoot>tr.info>th {background-color: #d9edf7;}
+  	.btg-force .table-hover > tbody > tr > td.info:hover,.btg-force .table-hover > tbody > tr > th.info:hover,.btg-force .table-hover > tbody > tr.info:hover > td,.btg-force .table-hover > tbody > tr.info:hover > th {background-color: #99CCFF}
+
+	.table>thead>tr>td.low-availability, .table>tbody>tr>td.low-availability, .table>tfoot>tr>td.low-availability, .table>thead>tr>th.low-availability, .table>tbody>tr>th.low-availability, .table>tfoot>tr>th.low-availability, .table>thead>tr.low-availability>td, .table>tbody>tr.low-availability>td, .table>tfoot>tr.low-availability>td, .table>thead>tr.low-availability>th, .table>tbody>tr.low-availability>th, .table>tfoot>tr.low-availability>th {background-color: #FFE0B2;}
+  	.btg-force .table-hover > tbody > tr > td.low-availability:hover,.btg-force .table-hover > tbody > tr > th.low-availability:hover,.btg-force .table-hover > tbody > tr.low-availability:hover > td,.btg-force .table-hover > tbody > tr.low-availability:hover > th {background-color: #FFC266;}
+
+	.table>thead>tr>td.sold-out, .table>tbody>tr>td.sold-out, .table>tfoot>tr>td.sold-out, .table>thead>tr>th.sold-out, .table>tbody>tr>th.sold-out, .table>tfoot>tr>th.sold-out, .table>thead>tr.sold-out>td, .table>tbody>tr.sold-out>td, .table>tfoot>tr.sold-out>td, .table>thead>tr.sold-out>th, .table>tbody>tr.sold-out>th, .table>tfoot>tr.sold-out>th {background-color: #FFB2B2;}
+  	.btg-force .table-hover > tbody > tr > td.sold-out:hover,.btg-force .table-hover > tbody > tr > th.sold-out:hover,.btg-force .table-hover > tbody > tr.sold-out:hover > td,.btg-force .table-hover > tbody > tr.sold-out:hover > th {background-color: #FF6666;}
+
+    .overlay {position: fixed; top: 0; left: 0; height: 100%; width: 100%; z-index: 1000; background-color: rgba(0,0,0,0.5);}
+    .white-box{width: 300px; height: 110px; position: fixed; top: 50%; left: 50%; margin-top: -100px; margin-left: -150px; background-color: #FFFFFF; border-radius: 5px; text-align: center; z-index: 1001;}
+    .white-box img{width: 75px;}
+    #loadingLabel{font-weight: bold;}
+    .access-green {color: #008800;}
+    .access-red{color: #FF0000;}
+    .multiselect{min-height: 100px;}
+    .column-width{width: 10%;}
+    .section-container {margin-bottom: 25px;} 
+    .section-container h4 {margin-bottom: 10px;}
+    .btg-force .form-group{margin-bottom: 5px;}
+    .step .step-container{margin-bottom: 20px; border: 2px solid #cccccc; padding: 10px;}
+    .button-row {margin-top: 10px; margin-bottom: 10px;}
+   </style>
+	<div id="overlay" style="display: none;">
+	    <div class="overlay">
+	    </div>
+	    <div class="white-box">
+	        <img src="{!URLFOR($Resource.LoadingImage, '')}" alt="Loading" />
+	        <div>
+	            <span id="loadingLabel">Loading</span>
+	        </div>
+	    </div>
+	</div>
+	<apex:form >
+	    <div class="btg-force"> 
+	        <div class="row" style="margin-bottom: 5px;">
+	            <div class="col-sm-8 col-md-8 col-lg-8">
+	                <h2><a href="/{!opp.Id}">{!opp.Name}</a> - <small>Add Packages and Products</small></h2>
+	            </div>
+	            <div class="col-sm-4 col-md-4 col-lg-4">
+	                <h2>Selected Items</h2>
+	            </div>
+	        </div>
+	        <div class="row">
+	        	<!-- Left Panel -->
+	        	<div class="col-sm-8 col-md-8 col-lg-8">
+	        		<div class="row">
+			            <div class="col-sm-12 col-lg-8">              
+			                <apex:outputPanel id="pnlMsg" layout="block">
+			                    <div class="alert alert-danger" style="display: {!IF(message != null && message != '','block','none')};">
+			                        {!message}
+			                    </div>
+			                </apex:outputPanel>
+			            </div>
+			        </div>
+	        		<apex:outputPanel id="selectItemTypeStep" layout="block" styleClass="step">
+	        			<apex:outputPanel layout="block" rendered="{!currentSection == 'Options'}" styleClass="step-container">
+		        			<div class="button-row text-center">
+		                        <apex:commandLink immediate="true" value="" rerender="selectItemTypeStep,addPackageStep,pnlMsg" status="status" styleClass="btn btn-warning btn-lg" action="{!addPackagesClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            <span class="glyphicon glyphicon-plus"></span>&nbsp;Add Packages
+		                        </apex:commandLink>
+		                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		                        <apex:commandLink value="" rerender="selectItemTypeStep,addProductStep,pnlMsg" status="status" styleClass="btn btn-primary btn-lg" action="{!addProductsClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            <span class="glyphicon glyphicon-plus"></span>&nbsp;Add Products
+		                        </apex:commandLink>
+		        			</div>
+		        		</apex:outputPanel>
+	        		</apex:outputPanel>
+	        		
+	        		<apex:outputPanel id="addPackageStep" layout="block" styleClass="step">
+	        			<apex:outputPanel layout="block" rendered="{!currentSection == 'Add Package'}" styleClass="step-container">
+	        				<h4>Add Packages</h4>
+			        		<div class="form-horizontal"> 
+			        			<div class="form-group">
+			        				<label class="col-sm-4 col-lg-3 control-label">Select a Show/Publication</label>
+			        				<div class="col-sm-8 col-lg-5">
+				        				<apex:selectlist value="{!selectedShow}" multiselect="false" size="1" styleClass="form-control">
+						                    <apex:selectOptions value="{!shows}" />
+						                    <apex:actionsupport rerender="addPackageStep,pnlMsg" event="onchange" onsubmit="displayOverlay();" action="{!onShowChange}" oncomplete="hideOverlay();" />  
+						                </apex:selectlist>
+						            </div>
+			        			</div>
+			        		</div>
+			        		<apex:outputPanel id="packagesPanel" layout="block" style="margin-top: 15px;" rendered="{!selectedShow != null && selectedShow != ''}">
+			        				<div class="text-center">
+		                            	<apex:commandLink immediate="true" value="" rerender="selectItemTypeStep,addPackageStep,pnlMsg" status="status" styleClass="btn btn-info" action="{!backClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            <span class="glyphicon glyphicon-arrow-left"></span>&nbsp;Back
+				                        </apex:commandLink>
+				                        <apex:commandLink value="" rerender="addPackageStep,pnlCart,pnlMsg" status="status" styleClass="btn btn-info" action="{!saveAndAddPackagesClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            <span class="glyphicon glyphicon-repeat"></span>&nbsp;Save and Add More
+				                        </apex:commandLink>
+				                        <apex:commandLink value="" rerender="addPackageStep,selectItemTypeStep,pnlCart,pnlMsg" status="status" styleClass="btn btn-info" action="{!savePackagesClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            <span class="glyphicon glyphicon-save"></span>&nbsp;Save
+				                        </apex:commandLink>
+				        			</div>
+				        			
+			        				<div class="text-right text-muted">
+			        					<small>
+			        						*Red = Sold out&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yellow = Low Availability
+			        					</small>
+			        				</div>
+			        				<table class="table table-bordered">
+		                                <thead>
+		                                    <tr>
+		                                        <th style="width: 5%"></th>
+		                                        <th style="width: 35px">Qty</th>
+		                                        <th style="width: 20%">Name</th>
+		                                        <th class="text-right" style="width: 5%">Max</th>
+		                                        <th class="text-right" style="width: 5%">Pending</th>
+		                                        <th class="text-right" style="width: 5%">Sold</th>
+		                                        <th class="text-right" style="width: 10%">Sales Price</th>
+		                                        <th style="width: 45%">Products (name, quantity, price)</th>
+		                                    </tr>           
+		                                </thead>
+		                                <tbody>                 
+		                                    <apex:repeat value="{!PackageList}" var="p" >
+		                                        <tr class="{!IF(p.SponsorPackage.Units_Sold__c >= p.SponsorPackage.Maximum_Units__c, 'sold-out',IF((p.SponsorPackage.Units_Sold__c + p.SponsorPackage.Units_Pending__c) >= p.SponsorPackage.Maximum_Units__c, 'low-availability',''))}">
+		                                            <td class="text-center">
+		                                                <apex:inputCheckbox value="{!p.selected}" rendered="{!p.SponsorPackage.Units_Sold__c < p.SponsorPackage.Maximum_Units__c}"/>
+		                                            </td>
+		                                            <td class="text-center">
+		                                                <apex:input label="" value="{!p.quantity}" style="width: 35px" />
+		                                            </td>
+		                                            <td>
+		                                                <apex:outputField label="" value="{!p.SponsorPackage.Name}" />
+		                                            </td>
+		                                            <td class="text-right">
+		                                                <apex:outputField label="" value="{!p.SponsorPackage.Maximum_Units__c}" />
+		                                            </td>
+		                                            <td class="text-right">
+		                                                <apex:outputField label="" value="{!p.SponsorPackage.Units_Pending__c}" />
+		                                            </td>
+		                                            <td class="text-right">
+		                                                <apex:outputField label="" value="{!p.SponsorPackage.Units_Sold__c}" />
+		                                            </td>
+		                                            <td class="text-right">
+		                                                <apex:outputField label="" value="{!p.SponsorPackage.Total_Price_of_Line_Items__c}" />
+		                                            </td>
+		                                            <td>
+		                                            	<apex:repeat value="{!p.lineItems}" var="prod">
+		                                            		<div class="row">
+		                                            			<div class="col-sm-7">
+		                                            				<apex:outputText value="{!prod.productName}" />
+		                                            			</div>
+		                                            			<div class="col-sm-2 text-right">
+		                                            				<apex:outputField label="" value="{!prod.oli.Quantity}" />
+		                                            			</div>
+		                                            			<div class="col-sm-3 text-right">
+		                                            				<apex:outputField label="" value="{!prod.oli.UnitPrice}" />
+		                                            			</div>
+		                                            		</div>
+		                                            	</apex:repeat>
+		                                            </td>
+		                                        </tr>
+		                                    </apex:repeat>
+		                                </tbody>
+		                            </table>
+		                            
+		                            <div class="button-row text-center">
+		                            	<apex:commandLink immediate="true" value="" rerender="selectItemTypeStep,addPackageStep,pnlMsg" status="status" styleClass="btn btn-info" action="{!backClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            <span class="glyphicon glyphicon-arrow-left"></span>&nbsp;Back
+				                        </apex:commandLink>
+				                        <apex:commandLink value="" rerender="addPackageStep,pnlCart,pnlMsg" status="status" styleClass="btn btn-info" action="{!saveAndAddPackagesClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            <span class="glyphicon glyphicon-repeat"></span>&nbsp;Save and Add More
+				                        </apex:commandLink>
+				                        <apex:commandLink value="" rerender="addPackageStep,selectItemTypeStep,pnlCart,pnlMsg" status="status" styleClass="btn btn-info" action="{!savePackagesClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            <span class="glyphicon glyphicon-save"></span>&nbsp;Save
+				                        </apex:commandLink>
+				        			</div>
+			        		</apex:outputPanel>
+			        	</apex:outputPanel>
+			        </apex:outputPanel><!-- Add package step -->
+			        
+			        <apex:outputPanel id="addProductStep" layout="block" styleClass="step">
+	        			<apex:outputPanel layout="block" rendered="{!currentSection == 'Add Products'}" styleClass="step-container">
+	        				 <h4>Add Products</h4>
+			        		<div class="form-horizontal"> 
+			        			<div class="form-group">
+			        				<label class="col-sm-4 col-lg-3 control-label">Select a Product Family</label>
+			        				<div class="col-sm-8 col-lg-5">
+				        				<apex:selectlist value="{!selectedFamily}" multiselect="false" size="1" styleClass="form-control">
+						                    <apex:selectOptions value="{!Families}" />
+						                    <apex:actionsupport rerender="addProductStep,pnlMsg" event="onchange" onsubmit="displayOverlay();" action="{!onShowChange}" oncomplete="hideOverlay();" />  
+						                </apex:selectlist>
+						            </div>
+			        			</div>
+			        		</div>
+			        		 
+			        		<apex:outputPanel layout="block" style="margin-top: 15px;" rendered="{!selectedFamily != null && selectedFamily != ''}">
+			        				<div class="button-row text-center">
+		                            	<apex:commandLink immediate="true" value="" rerender="selectItemTypeStep,addProductStep,pnlMsg" status="status" styleClass="btn btn-info" action="{!backClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            <span class="glyphicon glyphicon-arrow-left"></span>&nbsp;Back
+				                        </apex:commandLink>
+				                        <apex:commandLink value="" rerender="addProductStep,editLineItemsStep,pnlMsg" status="status" styleClass="btn btn-info" action="{!continueClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            Continue&nbsp;<span class="glyphicon glyphicon-arrow-right"></span>
+				                        </apex:commandLink>
+				        			</div>
+				        			
+			        				<table class="table table-bordered table-striped sieve">
+		                                <thead>
+		                                    <tr>
+		                                        <th style="width: 5%"></th>
+		                                        <th>Name</th>
+		                                        <th>Show/Publication</th>
+		                                        <th style="width: 10%">Quantity</th>
+		                                        <th style="width: 10%">Sales Price</th>
+		                                    </tr>           
+		                                </thead>
+		                                <tbody>                 
+		                                    <apex:repeat value="{!Products}" var="prod">
+		                                        <tr style="{!IF(prod.oli.PricebookEntry.Product2.Family == selectedFamily, '','display:none;' )}">
+		                                            <td class="text-center">
+		                                                <apex:inputCheckbox value="{!prod.selected}"/>
+		                                            </td>
+		                                            <td>
+		                                                <apex:outputField label="" value="{!prod.oli.PricebookEntry.Product2.Name}" />
+		                                            </td>
+		                                            <td>
+		                                            	<apex:selectlist value="{!prod.oli.Show_Event_Publication__c}" multiselect="false" size="1" >
+										                    <apex:selectOptions value="{!shows}" /> 
+										                </apex:selectlist>
+		                                            </td>
+		                                            <td>
+		                                                <apex:inputField label="" value="{!prod.oli.Quantity}" />
+		                                            </td>
+		                                            <td>
+		                                                <apex:inputField label="" value="{!prod.oli.UnitPrice}" />
+		                                            </td>
+		                                        </tr>
+		                                    </apex:repeat>
+		                                </tbody>
+		                            </table>
+		                            
+		                            <div class="button-row text-center">
+		                            	<apex:commandLink immediate="true" value="" rerender="selectItemTypeStep,addProductStep,pnlMsg" status="status" styleClass="btn btn-info" action="{!backClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            <span class="glyphicon glyphicon-arrow-left"></span>&nbsp;Back
+				                        </apex:commandLink>
+				                        <apex:commandLink value="" rerender="addProductStep,editLineItemsStep,pnlMsg" status="status" styleClass="btn btn-info" action="{!continueClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+				                            Continue&nbsp;<span class="glyphicon glyphicon-arrow-right"></span>
+				                        </apex:commandLink>
+				        			</div>
+			        		</apex:outputPanel>
+			        		
+			        	</apex:outputPanel>
+			        </apex:outputPanel><!-- Add Product step -->
+			        
+			        <!-- editLineItemsStep -->
+			        <apex:outputPanel id="editLineItemsStep" layout="block" styleClass="step">
+			            <apex:outputPanel layout="block" rendered="{!currentSection == 'Edit Info'}" styleClass="step-container">
+			            	<h4>Selected Products</h4>
+			            	<div class="button-row text-center">
+	                       		<apex:commandLink immediate="true" value="" rerender="addProductStep,editLineItemsStep,pnlMsg" status="status" styleClass="btn btn-info" action="{!editInfoBackClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            <span class="glyphicon glyphicon-arrow-left"></span>&nbsp;Back
+		                        </apex:commandLink>
+		                        <apex:commandLink value="" rerender="editLineItemsStep,addProductStep,pnlCart,pnlMsg" status="status" styleClass="btn btn-info" action="{!saveAndAddProductsClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            <span class="glyphicon glyphicon-repeat"></span>&nbsp;Save and Add More
+		                        </apex:commandLink>
+		                        <apex:commandLink value="" rerender="editLineItemsStep,selectItemTypeStep,pnlCart,pnlMsg" status="status" styleClass="btn btn-info" action="{!saveProductsClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            <span class="glyphicon glyphicon-save"></span>&nbsp;Save
+		                        </apex:commandLink>
+		        			</div>
+			                <table class="table table-bordered table-striped table-condensed">
+	                       		<tbody>
+			                        <apex:repeat value="{!CurrentlySelectedProducts}" var="prod"> 
+			                        <tr>
+	                       				<td>
+	                       					<div class="pull-left" style="width: 90%;">
+	                       						
+	                       					<div class="form-horizontal">
+				                                <div class="form-group">
+					                                <label class="col-sm-2 control-label">Name</label> 
+					                                <div class="col-sm-10">
+		                                				<p class="form-control-static"><apex:outputField label="" value="{!prod.oli.PricebookEntry.Product2.Name}" /></p>
+		                                			</div>
+		                                		</div>
+		                                		 <div class="form-group">
+					                                <label class="col-sm-2 control-label">Show/Publication</label> 
+					                                <div class="col-sm-10">
+					                                	<apex:selectlist value="{!prod.oli.Show_Event_Publication__c}" multiselect="false" size="1" styleClass="form-control" >
+										                    <apex:selectOptions value="{!shows}" />
+										                    <apex:actionSupport event="onchange" action="{!updateShowPub}" reRender="editLineItemsStep,pnlMsg" onsubmit="displayOverlay();" oncomplete="hideOverlay();" > 
+										                    	<apex:param name="prodId" value="{!prod.oli.PricebookEntryId}" assignTo="{!selectedPricebookEntryId}"/>
+										                    	<apex:param name="prodItemNumber" value="{!prod.itemNumber}" assignTo="{!selectedItemNumber}"/>
+										                    </apex:actionSupport>
+										                </apex:selectlist>
+		                                			</div>
+		                                		</div>
+						                        <div class="form-group">
+					                                <label class="col-sm-2 control-label">Quantity</label> 
+					                                <div class="col-sm-10"> 
+					                                	<p class="form-control-static"><apex:outputField label="" value="{!prod.oli.Quantity}" /></p>
+					                                </div>
+					                            </div>
+						                        <div class="form-group">
+					                                <label class="col-sm-2 control-label">Unit Price</label> 
+					                                <div class="col-sm-10">
+					                                	<p class="form-control-static"><apex:outputField label="" value="{!prod.oli.UnitPrice}" /></p>
+													</div>
+												</div>
+					                       
+						                       	<apex:repeat value="{!prod.fieldSet}" var="field">
+						                            <div class="form-group">
+						                                <label class="col-sm-2 control-label">{!field.Label + IF(field.Required || field.DBRequired, '*', '')}</label> 
+						                                <div class="col-sm-10">
+						                                	<apex:inputField label="" value="{!prod.oli[field.FieldPath]}" styleClass="form-control" />
+						                                </div>
+						                            </div>
+						                        </apex:repeat>
+					                        </div>
+					                        </div>
+					                        <div class="pull-right" style="width: 8%">
+					                        	<apex:commandLink value="" rerender="editLineItemsStep,pnlMsg" status="status" styleClass="btn btn-sm btn-warning" action="{!cloneProductClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            					<span class="glyphicon glyphicon-retweet"></span>&nbsp;&nbsp;Clone
+		                            					<apex:param name="prodId" value="{!prod.oli.PricebookEntryId}" assignTo="{!selectedPricebookEntryId}"/> 
+		                            					<apex:param name="prodItemNumber" value="{!prod.itemNumber}" assignTo="{!selectedItemNumber}"/>
+		                        					</apex:commandLink>
+					                        </div>
+						                  </td>
+	                       			</tr>
+			                        </apex:repeat> 
+	                       		</tbody>
+	                       	</table>
+			                       	
+	                       	<div class="button-row text-center">
+	                       		<apex:commandLink immediate="true" value="" rerender="addProductStep,editLineItemsStep,pnlMsg" status="status" styleClass="btn btn-info" action="{!editInfoBackClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            <span class="glyphicon glyphicon-arrow-left"></span>&nbsp;Back
+		                        </apex:commandLink>
+		                        <apex:commandLink value="" rerender="editLineItemsStep,addProductStep,pnlCart,pnlMsg" status="status" styleClass="btn btn-info" action="{!saveAndAddProductsClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            <span class="glyphicon glyphicon-repeat"></span>&nbsp;Save and Add More
+		                        </apex:commandLink>
+		                        <apex:commandLink value="" rerender="editLineItemsStep,selectItemTypeStep,pnlCart,pnlMsg" status="status" styleClass="btn btn-info" action="{!saveProductsClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+		                            <span class="glyphicon glyphicon-save"></span>&nbsp;Save
+		                        </apex:commandLink>
+		        			</div>
+			            </apex:outputPanel>
+			        </apex:outputPanel><!-- edit line items -->
+			        
+	        	</div>	
+	        	<!-- Right panel -->
+	        	<div class="col-sm-4 col-md-4 col-lg-4">
+	        		<apex:outputPanel id="pnlCart" layout="block" rendered="{! opp != null}">
+		        		<div class="row">
+		        			<div class="col-md-12">
+		        				<div class="panel panel-default">
+  									<div class="panel-heading"><h3 class="panel-title">Packages</h3></div>
+				        				<table class="table table-striped">
+			                                <tr>
+			                                    <th>Name</th>
+			                                    <th class="text-right" style="width: 10%">Quantity</th>
+			                                    <th class="text-right" style="width: 10%">Sales Price</th>
+			                                </tr>                               
+			                                <apex:repeat value="{!selectedPackages}" var="p">
+			                                    <tr>
+			                                        <td>
+			                                            <apex:outputField label="" value="{!p.SponsorPackage.Name}" />
+			                                        </td>
+			                                        <td class="text-right">
+			                                            <apex:outputText label="" value="{!p.quantity}" />
+			                                        </td>
+			                                        <td class="text-right">
+			                                            <apex:outputField label="" value="{!p.SponsorPackage.Total_Price_of_Line_Items__c}" />
+			                                        </td>
+			                                    </tr>
+			                                </apex:repeat>
+			                            </table>
+				            		</div><!-- Panel -->
+		        			</div>
+		        		</div><!-- Selected Packages -->
+		        		<div class="row">
+		        			<div class="col-md-12">
+		        				<div class="panel panel-default">
+  									<div class="panel-heading"><h3 class="panel-title">Products</h3></div>
+		                            <table class="table table-striped">
+		                                <tr>
+		                                    <th class="text-center" style="width: 10%">Remove</th>
+		                                    <th>Name</th>
+		                                    <th class="text-right" style="width: 10%">Quantity</th>
+		                                    <th class="text-right" style="width: 10%">Sales Price</th>
+		                                </tr>                               
+		                                <apex:repeat value="{!selectedProducts}" var="prod">
+		                                    <tr>
+		                                    	<td>
+		                                    		<apex:commandLink value="" rerender="pnlCart,pnlMsg" status="status" styleClass="btn btn-xs btn-danger" action="{!removeProductClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+			                    						<span class="glyphicon glyphicon-trash"></span>
+			                    						<apex:param name="prodId" value="{!prod.oli.PricebookEntryId}" assignTo="{!selectedPricebookEntryId}"/>
+			                    						<apex:param name="itemNumber" value="{!prod.itemNumber}" assignTo="{!selectedItemNumber}"/>
+			                    					</apex:commandLink>
+		                                    	</td>
+		                                        <td>
+		                                            <apex:outputField label="" value="{!prod.oli.PricebookEntry.Product2.Name}" />
+		                                            <br/>
+		                                            <apex:outputField label="Show/Pub" value="{!prod.oli.Show_Event_Publication__c}" />
+		                                        </td>		                                        
+		                                        <td class="text-right">
+		                                            <apex:outputField label="" value="{!prod.oli.Quantity}" />
+		                                        </td>
+		                                        <td class="text-right">
+		                                            <apex:outputField label="" value="{!prod.oli.UnitPrice}" />
+		                                        </td>
+		                                    </tr>	
+		                                </apex:repeat>
+		                            </table>
+			                	</div><!-- Panel -->
+		        			</div>
+		        		</div><!-- Selected Products -->
+		        		<div class="row">
+			        		<div class="col-md-12 text-center">
+			        			<a href="/{!opp.Id}" class="btn btn-default"><span class="glyphicon glyphicon-ban-circle"></span>&nbsp;Cancel</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				        		<apex:commandLink value="" rerender="pnlMsg" status="status" styleClass="btn btn-success" action="{!submitClick}" onclick="displayOverlay();" oncomplete="hideOverlay();">
+			                    	<span class="glyphicon glyphicon-floppy-save"></span>&nbsp;Add to Opportunity
+			                    </apex:commandLink>
+			               </div>
+			           </div>
+		        	</apex:outputPanel>
+	        	</div>        	
+	        </div>
+	 	</div>
+	</apex:form>
+	<script type="text/javascript">
+	    function displayOverlayWithText(labelText)
+	    {           
+	        $("#loadingLabel").html(labelText);
+	        $("#overlay").attr('style','display: block;');
+	    }
+	    
+	    function displayOverlay()
+	    {
+	        displayOverlayWithText('Loading');
+	    }
+	
+	    function hideOverlay()
+	    {           
+	        $("#overlay").attr('style','display: none;');
+	    }
+	    
+	    function goToStepOne()
+	    {
+	        displayOverlay();
+	        afStepOne();
+	        hideOverlay();
+	        
+	        return false;
+	    }
+	    
+	    function scrollTop()
+	    {
+	        $("body").animate({ scrollTop: 0 }, "fast");
+	    }
+	</script>
+</apex:page>

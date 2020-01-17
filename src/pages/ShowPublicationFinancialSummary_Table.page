@@ -1,0 +1,130 @@
+<apex:page controller="ShowPublicationFinancialSummaryCtrl" readOnly="true" renderAs="{!displayType}" standardStylesheets="false" applyBodyTag="false" showheader="false" applyhtmltag="false">
+	<head>
+        <style type="text/css">
+                        
+            @page { size: A4 landscape; }
+            div.infoHeader{
+            	border-top: 3px solid black;
+            	border-bottom: 3px solid black;
+            	width:100%;
+            }
+            div.infoHeader span{
+            	width:19%;
+            	display:inline-block;
+            }
+            .tableHeader{
+            	border-bottom: 1px solid black;
+            }
+            
+        </style>
+    </head>
+    <body>
+    	<div style="text-align:center;">
+    		<h2>FINANCIAL SUMMARY FOR: {!showPublication.Name}</h2>	
+    	</div>
+		<div class="infoHeader">
+			<span>SORT: Alpha</span>
+			<span>COVER DATE: <apex:outputField value="{!showPublication.Show_Start_Date__c}"/></span>
+			<span>THEME OF ISSUE: </span>
+			<span>Page 1</span>
+			<span>PRINTED: <apex:outputText value="{!printedDate}"/></span>
+		</div>
+		<apex:dataTable id="Table" title="String" value="{!pages[currentPage]}" var="row" headerClass="tableHeader" style="width:100%;" styleClass="dataTable">
+			<apex:column headerValue="Advertiser">
+				<apex:outputLink rendered="{!NOT(row.isTotalRow)}" value="/{!row.accountId}">{!row.advertiser}</apex:outputLink>
+                <apex:outputText style="font-weight: bold; background-color: #66CCFF; text-align: left;" rendered="{!row.isTotalRow}"> TOTALS </apex:outputText>                                                                           
+			</apex:column>
+			<apex:column value="{!row.agency}" headerValue="Agency"/>
+			<apex:column value="{!row.size}" headerValue="Size"/>
+			<apex:column value="{!row.space}" headerValue="Space"/>
+			<apex:column value="{!row.color}" headerValue="Color"/>
+            <apex:column headerValue="Pages">
+				<apex:outputText rendered="{!NOT(ISNULL(row.pages))}">{!row.pages}pg</apex:outputText>
+			</apex:column>
+			<apex:column value="{!row.chg1}" headerValue="Chg"/>
+			<apex:column value="{!row.position}" headerValue="Position"/>
+			<apex:column value="{!row.chg2}" headerValue="Chg"/>
+            <apex:column headerValue="Bleed">
+				<apex:outputText rendered="{!row.bleed}" value="Yes"/>
+                <apex:outputText rendered="{!!row.bleed}" value="No"/>
+			</apex:column>
+			<apex:column value="{!row.chg3}" headerValue="Chg" />
+			<apex:column headerValue="Total Media">
+                <apex:outputText value="{0, number, currency}">
+                    <apex:param value="{!row.totalMedia}" />
+                </apex:outputText>
+            </apex:column>
+			<apex:column headerValue="Discount" >
+                <apex:outputText value="{!row.discount}%" rendered="{!row.discount != null}"/>
+            </apex:column>
+			<apex:column headerValue="Chg">
+				<apex:outputText value="({!row.chg4})" rendered="{!row.chg4 != null}"/>
+			</apex:column>
+			<apex:column headerValue="Net Media Production">
+                <apex:outputText value="{0, number, currency}">
+                    <apex:param value="{!row.netMedia}" />
+                </apex:outputText>
+            </apex:column>
+			<apex:column headerValue="Chg">
+				<apex:outputText value="({!row.chg5})" rendered="{!row.chg5 != null}"/>
+			</apex:column>
+			<apex:column headerValue="GR Order TTL">
+                <apex:outputText value="{0, number, currency}">
+                    <apex:param value="{!row.grossOrderTotal}" />
+                </apex:outputText>
+            </apex:column>
+			<apex:column value="{!row.bill}" headerValue="Bill"/>
+			<apex:column headerValue="Project Net">
+                <apex:outputText value="{0, number, currency}">
+                    <apex:param value="{!row.projectNet}" />
+                </apex:outputText>
+            </apex:column>
+			<apex:column value="{!row.insertionOrderNumber}" headerValue="Io.No"/>
+			<apex:column value="{!row.rep}" headerValue="Rep">
+			</apex:column>
+			<apex:column headerValue="Order Number">
+				<a href="/{!row.orderId}">{!row.orderNumber}</a>
+			</apex:column>
+			<apex:column headerValue="Item Number">
+				<a href="/{!row.item.Id}">{!row.orderItemNumber}</a>
+			</apex:column>
+			<apex:column headerValue="Invoice">
+				<a href="/{!row.invoice.Id}">{!row.invoice.Name}</a>
+			</apex:column>
+			<apex:column headerValue="CVR DT Entry Date">
+				<apex:outputText value="{!row.coverDate}"/>
+			</apex:column>
+			<!--
+			<apex:column headerValue="Match" style="width:2.5em;">
+                <apex:outputPanel rendered="{!NOT(ISBLANK(row.contractId))}">
+                    <a href="/apex/ContractOrderMatch?contract={!row.contractId}&order={!row.orderid}">
+                        <apex:outputText rendered="{!row.match}"  value="✓" style="color:green;"/>
+                        <apex:outputText rendered="{!!row.match}" value="✘"        style="color:red;"/>
+                    </a>
+                </apex:outputPanel>
+            </apex:column>
+			-->
+        
+		</apex:dataTable>
+        <apex:form >
+            <apex:commandLink value="Next>" action="{!next}" rendered="true" reRender="Table"/>
+            
+        </apex:form>
+	</body>
+
+    <style>
+        body.overviewPage .bPageBlock .pbTitle, body.overviewPage .bRelatedList .bPageBlock .pbTitle, body.homeTab .bPageBlock .pbTitle, body.homeTab .bRelatedList .bPageBlock .pbTitle{
+            width:100%;
+        }
+        tr:nth-child(even) {background-color: #f2f2f2}
+        .dataTable td + td { border-left:1px solid dimgrey; padding-left:2px;}
+       
+        
+        
+        .tableHeader{
+        	text-align: center;
+        }
+        .dataTable > tBody >tr:hover{    background-color: #66CCFF;
+}
+	</style>
+</apex:page>

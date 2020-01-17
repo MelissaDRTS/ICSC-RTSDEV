@@ -1,0 +1,148 @@
+<apex:page showHeader="false" controller="AppliedPaymentViewController" standardStylesheets="false" sidebar="false">
+  <apex:stylesheet value="{!URLFOR($Resource.slds, 'assets/styles/salesforce-lightning-design-system.css')}" />
+  <meta charset="utf-8"/>
+  <script src="{!URLFOR($Resource.Jquery_UI, 'jquery-ui-1.11.4.custom/external/jquery/jquery.js')}"></script>
+  <script src="{!URLFOR($Resource.Jquery_UI, 'jquery-ui-1.11.4.custom/jquery-ui.js')}"></script>
+  <script src="{!URLFOR($Resource.Jquery_UI, 'jquery-ui-1.11.4.custom/jquery-ui.js')}"></script>
+  <apex:stylesheet value="{!URLFOR($Resource.Jquery_UI, 'jquery-ui-1.11.4.custom/jquery-ui.css')}"/>
+  <apex:stylesheet value="{!URLFOR($Resource.Jquery_UI, 'jquery-ui-1.11.4.custom/jquery-ui.theme.css')}"/>
+  <script>
+    $(function() {
+        $( '[id$=datepicker]' ).datepicker();
+    });
+    $(function() {
+        $( '[id$=datepicker2]' ).datepicker();
+    });
+    $(function() {
+        $( '[id$=datepicker3]' ).datepicker();
+    });
+    $(function() {
+        $( '[id$=datepicker4]' ).datepicker();
+    });
+    function showSpinner(){
+        console.log('showSpinner');
+        var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+        spinner.className = 'slds-spinner_container slds-show';
+    }
+    function hideSpinner(){
+        console.log('hideSpinner');
+        var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+        spinner.className = 'slds-spinner_container slds-hide';
+    }
+  </script>
+  <style type="text/css">
+      #Table > tbody > tr:hover > td{
+          background-color:#99ccff;
+      }
+      h4{
+          color:white;
+      }
+  </style>
+  <nav role="navigation" aria-label="Breadcrumbs">
+      <ol class="slds-breadcrumb slds-list--horizontal">
+          <li class="slds-breadcrumb__item slds-text-heading--label"><a href="{!URLFOR($Action.Account.Tab, $ObjectType.Account)}">Accounts</a></li>
+          <li class="slds-breadcrumb__item slds-text-heading--label"><a href="/{!paymentAccountId}">{!paymentAccount.Name}</a></li>
+          <li class="slds-breadcrumb__item slds-text-heading--label"><a href="/apex/PaymentDistribution?id={!paymentAccountId}">Payment Distribution</a></li>
+          <li class="slds-breadcrumb__item slds-text-heading--label"><a>Applied Payment View</a></li>
+      </ol>
+  </nav>
+  <div class="slds-spinner_container slds-hide" style="position:fixed;">
+      <div class="slds-spinner--brand slds-spinner slds-spinner--large" aria-hidden="false" role="alert">
+          <div class="slds-spinner__dot-a"></div>
+          <div class="slds-spinner__dot-b"></div>
+      </div>
+  </div>
+  <apex:actionStatus id="actionStatus" onstart="showSpinner();" onstop="hideSpinner();" />
+  <apex:outputPanel rendered="{!rows.size == 0}">
+    <apex:form rendered="{!NOT(showFilter)}">
+        <apex:commandButton title="Filter by Date" status="actionStatus" value="Filter by Date" action="{!popupFilter}" styleClass="slds-button slds-button--brand"/>
+    </apex:form>
+    <apex:outputPanel rendered="{!showFilter}">
+      <apex:form >
+        From: <apex:inputText id="datepicker" value="{!beginDate}"/> To:
+        <apex:inputText id="datepicker2" value="{!endDate}"/>
+        <apex:commandButton title="Confirm" status="actionStatus" value="Confirm" action="{!filterByDates}" styleClass="slds-button slds-button--brand"/>
+      </apex:form>
+    </apex:outputPanel>
+    <div style="float:left; layout:block; clear:both; position:relative; z-index: -1; margin-top: 50px; " class="slds-notify_container">
+      <div class="slds-notify slds-notify--toast slds-theme--error slds-theme--alert-texture" role="alert">
+          <div class="slds-notify__content slds-grid">
+              <div class="slds-col slds-align-middle">
+                  <h2 class="slds-text-heading--small" style="text-align: center;">No Applied Payments to Display</h2>
+              </div>
+          </div>
+      </div>
+    </div>
+  </apex:outputPanel>
+  <apex:outputPanel id="PageContainer" rendered="{!rows.size > 0}">
+    <div class="slds-page-header" role="banner">
+      <div class="slds-media slds-media--center">
+          <div class="slds-media__body">
+              <p class="slds-page-header__title slds-truncate slds-align-middle">
+                  Applied Payments currently on {!paymentAccount.Name}
+              </p>
+          </div>
+      </div>
+    </div>
+    <apex:form rendered="{!NOT(showFilter)}">
+        <apex:commandButton title="Filter by Date" status="actionStatus" value="Filter by Date" action="{!popupFilter}" styleClass="slds-button slds-button--brand"/>
+    </apex:form>
+    <apex:outputPanel id="DateFilter" rendered="{!showFilter}">
+      <apex:form >
+        From: <apex:inputText id="datepicker3" value="{!beginDate}"/> To:
+        <apex:inputText id="datepicker4" value="{!endDate}"/>
+        <apex:commandButton title="Confirm" status="actionStatus" value="Confirm" action="{!filterByDates}" styleClass="slds-button slds-button--brand"/>
+      </apex:form>
+    </apex:outputPanel>
+    <table id='Table' class="slds-table slds-table--striped slds-table--bordered">
+      <thead>
+        <tr>
+          <th >Applied Payment</th>
+          <th>Order Item</th>
+          <th>Payment Record</th>
+          <th>Applied Amount</th>
+          <th>Applied Date</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody>
+        <apex:repeat value="{!rows}" var="row">
+          <tr>
+            <td>
+              <a href="/{!row.appliedPayment.id}">{!row.appliedPayment.Name}</a>
+            </td>
+            <td>
+              <a href="/{!row.oItem.id}">{!row.oItem.PricebookEntry.Product2.Name}</a>
+            </td>
+            <td>
+              <a href="/{!row.payment.id}">{!row.payment.Name}</a>
+            </td>
+            <td>
+              ${!row.appliedAmount}
+            </td>
+            <td>
+              {!row.apDate}
+            </td>
+            <td>
+              <apex:form >
+                <apex:commandLink value="X" action="{!deleteRow}" ReRender="PageContainer">
+                  <apex:param name="index" value="{!row.index}" assignTo="{!indexToDelete}"/>
+                </apex:commandLink>
+              </apex:form>
+            </td>
+          </tr>
+        </apex:repeat>
+      </tbody>
+    </table>
+  </apex:outputPanel>
+  <apex:form rendered="{!rows.size > 0}">
+    <apex:commandLink value=" <<First | " action="{!first}" status="actionStatus" reRender="PageContainer"/>
+    <apex:commandLink value=" <Previous | " action="{!previous}" rendered="{!hPrev}" status="actionStatus" reRender="PageContainer"/>
+    <apex:selectList value="{!pageSelected}" multiselect="false" size="1">
+        <apex:actionSupport event="onchange" action="{!pageSelect}" reRender="PageContainer" status="actionStatus"/>
+        <apex:SelectOptions value="{!pageNumbers}"/>
+    </apex:selectList>
+    <apex:commandLink value=" | Next> " action="{!next}" rendered="{!hNext}" status="actionStatus" reRender="PageContainer"/>
+    <apex:commandLink value=" | Last>> " action="{!last}" status="actionStatus" reRender="PageContainer"/>
+  </apex:form>
+</apex:page>

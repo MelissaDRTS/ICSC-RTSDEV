@@ -1,0 +1,481 @@
+<apex:page controller="MyDayViewController" docType="html-5.0" sidebar="false">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"/>
+   <apex:includeScript value="{!URLFOR($Resource.MyDayResources, 'MyDayResources/bootstrap-3.0.2/js/bootstrap.min.js')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.MyDayResources, 'MyDayResources/bootstrap-3.0.2/css/bootstrap-btg-force.css')}"/>
+   <style>
+		.btg-force .panel-task{border-color: #aaaaaa;border-width: 1px;margin-bottom: 5px !important;border-top: 3px solid #56458c;}        
+        .btg-force .panel-account{border-color: #aaaaaa;border-width: 1px;margin-bottom: 5px !important;border-top: 3px solid #236fbd;}         
+        .btg-force .panel-opportunity{border-color: #aaaaaa;border-width: 1px;margin-bottom: 5px !important;border-top: 3px solid #e5c130;}
+        .btg-force .panel-chatter{border-color: #aaaaaa;border-width: 1px;margin-bottom: 5px !important;border-top: 3px solid #F45531;}
+        
+        .btg-force .panel-task > .panel-heading, .btg-force .panel-account > .panel-heading, .btg-force .panel-opportunity > .panel-heading, .btg-force .panel-chatter > .panel-heading {color: #000000;background-color: #dddddd;border-color: #aaaaaa;padding: 5px 10px !important;}
+        .btg-force .panel-task > .panel-heading a, .btg-force .panel-account > .panel-heading a, .btg-force .panel-opportunity > .panel-heading a, .btg-force .panel-chatter > .panel-heading a{color: #000000;}
+   		.btg-force .table-condensed > thead > tr > th, .btg-force .table-condensed > tbody > tr > th, .btg-force .table-condensed > tfoot > tr > th, .btg-force .table-condensed > thead > tr > td, .btg-force .table-condensed > tbody > tr > td, .btg-force .table-condensed > tfoot > tr > td {padding: 2px;}
+
+      	.overlay {position: fixed; top: 0; left: 0; height: 100%; width: 100%; z-index: 100; background-color: rgba(0,0,0,0.5);}
+        .white-box{width: 300px; height: 110px; position: fixed; top: 50%; left: 50%; margin-top: -100px; margin-left: -150px; background-color: #FFFFFF; border-radius: 5px; text-align: center; z-index: 101;}
+        .white-box img{width: 75px;}
+        #loadingLabel{font-weight: bold;}
+        
+        .new-container{margin-left: 5px;}
+        .item-container{margin: 0px 5px;}
+        .item-container table {border: 2px solid #aaaaaa;}
+        .item-container .flagged-task{border: 2px solid #56458c;}
+		.item-container .flagged-account{border: 2px solid #236fbd;}
+		.item-container .flagged-opportunity{border: 2px solid #e5c130;}
+        .label-column {width: 25%;}
+        .items-container {height:510px; overflow: auto; padding: 5px;}
+        .chatter-container {height:549px; overflow: auto; padding: 5px;}
+        .chatter-container *, .chatter-container *:before, .chatter-container *:after {-webkit-box-sizing: content-box;-moz-box-sizing: content-box;box-sizing: content-box;}
+		.chatter-container .panel {margin-bottom: 0px;}
+		.chatter-container .publisherpollchoiceinput, .chatter-container .fileFormInputElement, .chatter-container .publishercontainer .contentPublisherSlideDown table.postInput {width: 95% !important;}
+		.panel-chatter .panel-body{padding: 5px;}
+        .show{display: block;}
+        .show-inline{display: inline;}
+		.hide{display: none;}
+		#details, #main  {margin-bottom: 20px;}
+		#closeTop{margin-bottom: 10px;}
+		#closeBottom {margin-top: 10px;}
+    </style>
+   <div id="overlay" style="display: none;">
+	    <div class="overlay">
+	    </div>
+	    <div class="white-box">
+	        <img src="{!URLFOR($Resource.MyDayResources, 'MyDayResources/Loading_Animation.gif')}" alt="Loading" />
+	        <div>
+	            <span id="loadingLabel">Loading</span>
+	        </div>
+	    </div>
+	</div>	
+	<div id="main" class="btg-force"> 
+		<div class="row">
+   			
+   			<apex:form >
+   			<div class="{!IF(hideChatter,'col-md-4','col-md-3')}" id="tasks-container">
+   				<div class="panel panel-task">
+   					<div class="panel-heading">
+   						<div class="clearfix">
+	   						<h3 class="panel-title pull-left">Tasks</h3>
+	   						<div class="new-container pull-left">
+	   							 <a href="/00T/e?retURL=/apex/{!namespacePrefix}MyDayView" title="New Task"><span class="glyphicon glyphicon-plus-sign"></span></a>
+	   						</div>
+	   						<div class="pull-right text-right">
+	   							<apex:selectlist multiselect="false" size="1" value="{!taskViewId}">
+			                        <apex:selectoptions value="{!taskViews}" />
+	                         		<apex:actionsupport event="onchange" rerender="tasks" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetTaskPage}"/>               
+			                    </apex:selectlist>
+				            </div>	   						
+   						</div>
+   						<div style="margin-top: 5px;" class="text-right">
+	   							<strong>Sort By </strong>
+	   							<apex:selectlist multiselect="false" size="1" value="{!taskSortField}">
+	   								<apex:selectOption itemvalue="ActivityDate" itemLabel="Due Date"></apex:selectOption>
+			                        <apex:selectOption itemvalue="Who.FirstName" itemLabel="First Name"></apex:selectOption>
+			                        <apex:selectOption itemvalue="Who.LastName" itemLabel="Last Name"></apex:selectOption>   
+			                        <apex:selectOption itemvalue="Status" itemLabel="Status"></apex:selectOption>
+			                        <apex:selectOption itemvalue="Subject" itemLabel="Subject"></apex:selectOption>
+			                        <apex:actionsupport event="onchange" rerender="tasks" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetTaskPage}"/>                    
+			                    </apex:selectlist>  
+			                    &nbsp;
+			                    <apex:selectlist multiselect="false" size="1" value="{!taskSortDirection}">
+			                        <apex:selectOption itemValue="ASC" itemLabel="Ascending"></apex:selectOption>
+			                        <apex:selectOption itemvalue="DESC" itemLabel="Descending"></apex:selectOption>
+			                        <apex:actionsupport event="onchange" rerender="tasks" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetTaskPage}"/>
+			                    </apex:selectlist>
+				            </div> 
+   					</div>
+   					<apex:outputPanel id="tasks">
+	   					<div class="panel-body clearfix">
+	   						<div class="pull-left">
+	   							<strong>{!IF(tasksCount == 0, 0 , (currentTaskPage - 1) * 50 + 1)} - {!IF(tasksCount < 50, tasksCount, IF((50 * currentTaskPage) > tasksCount, tasksCount, 50 * currentTaskPage))} of {!tasksCount} record{!IF(tasksCount == 1, '', 's')}</strong>
+	   							<apex:commandLink id="lnkTaskPrevious" rerender="tasks" oncomplete="hideOverlay();" onclick="displayOverlay();" action="{!decrementTaskPage}" title="Previous Page" style="text-decoration: none;"> 
+                                    <span class="glyphicon glyphicon-chevron-left"></span>
+							   </apex:commandLink>
+							   <apex:commandLink id="lnkTaskNext" rerender="tasks" oncomplete="hideOverlay();" onclick="displayOverlay();" action="{!incrementTaskPage}" title="Next Page" style="text-decoration: none;"> 
+                                    <span class="glyphicon glyphicon-chevron-right"></span>
+							   </apex:commandLink>
+	   						</div>	   						
+	   					</div>
+	   					<div class="items-container">
+	   					<apex:repeat id="rptTasks" value="{!tasks}" var="t">
+	   						<div class="item-container">
+	   							<table id="tbl{!t.Id}" class="table table-condensed table-striped{!IF(t.MyDayFlagged__c,' flagged-task','')}">
+	   								<tr>
+	   									<td class="text-right label-column"><strong>Subject</strong></td>
+	   									<td class="clearfix">
+	   										<div class="pull-left">
+	   											{!t.Subject}
+	   										</div>
+	   										<div class="pull-right">
+	   											<apex:commandLink id="lnkTaskView" rerender="detail" oncomplete="hideOverlay(); show();" onclick="displayOverlay();" title="View Details" style="text-decoration: none;"> 
+                                                    <apex:param name="taskId" value="{!t.Id}" assignTo="{!recordId}"/>
+													<span class="glyphicon glyphicon-eye-open"></span>
+											   </apex:commandLink>
+											   &nbsp;&nbsp;
+	   											<apex:commandLink id="lnkTaskFlag" action="{!flagTask}" oncomplete="hideOverlay();" onclick="displayOverlay(); flagTask(this,'{!t.Id}');" title="{!IF(t.MyDayFlagged__c,'Remove Flag','Flag')}" style="text-decoration: none;"> 
+                                                    <apex:param name="taskId" value="{!t.Id}" assignTo="{!recordId}"/>
+													<span id="spn{!t.Id}" class="glyphicon glyphicon-star{!IF(t.MyDayFlagged__c,'','-empty')}"></span>
+											   </apex:commandLink>
+	   										</div>
+	   									</td>	
+	   								</tr>
+	   								<tr>
+	   									<td class="text-right"><strong>Contact</strong></td>
+	   									<td>{!t.Who.Name}</td>
+	   								</tr>
+	   								<tr>
+	   									<td class="text-right"><strong>Status</strong></td>
+	   									<td>{!t.Status}</td>
+	   								</tr>
+	   								<tr>
+	   									<td class="text-right"><strong>Due</strong></td>
+	   									<td><apex:outputField value="{!t.ActivityDate}" /></td>
+	   								</tr>
+	   							</table>
+	   						</div>
+	   					</apex:repeat>
+	   				</div>
+   					</apex:outputPanel>
+   				</div>
+   			</div><!-- Tasks Column -->
+   			
+   			<div class="{!IF(hideChatter,'col-md-4','col-md-3')}" id="accounts-container">
+   				<div class="panel panel-account">
+   					<div class="panel-heading">
+   						<div class="clearfix">
+	   						<h3 class="panel-title pull-left">Accounts</h3>
+	   						<div class="new-container pull-left">
+	   							 <a href="/001/e?retURL=/apex/{!namespacePrefix}MyDayView" title="New Account"><span class="glyphicon glyphicon-plus-sign"></span></a>
+	   						</div>
+	   						<div class="pull-right text-right">
+	   							<apex:selectlist multiselect="false" size="1" value="{!accountViewId}">
+			                        <apex:selectoptions value="{!accountViews}" />
+	                         		<apex:actionsupport event="onchange" rerender="accounts" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetAccountPage}"/>               
+			                    </apex:selectlist>			                    
+	   						</div>
+	   					</div>
+   						<div style="margin-top: 5px;" class="text-right">
+   							<strong>Sort By </strong>
+   							<apex:selectlist multiselect="false" size="1"  value="{!accountSortField}">
+   								 <apex:selectoptions value="{!accountSortOptions}" />
+		                        <apex:actionsupport event="onchange" rerender="accounts" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetAccountPage}"/>                             
+		                    </apex:selectlist>  
+		                    &nbsp;
+		                    <apex:selectlist multiselect="false" size="1"  value="{!accountSortDirection}">
+		                        <apex:selectOption itemValue="ASC" itemLabel="Ascending"></apex:selectOption>
+		                        <apex:selectOption itemvalue="DESC" itemLabel="Descending"></apex:selectOption> 
+		                        <apex:actionsupport event="onchange" rerender="accounts" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetAccountPage}"/>        
+		                    </apex:selectlist> 
+		            	</div>
+   					</div>
+   					<apex:outputPanel id="accounts">
+	   					<div class="panel-body clearfix">
+	   						<div class="pull-left">
+	   							<strong>{!IF(accountsCount == 0, 0 , (currentAccountPage - 1) * 50 + 1)} - {!IF(accountsCount < 50, accountsCount, IF((50 * currentAccountPage) > accountsCount, accountsCount, 50 * currentAccountPage))} of {!accountsCount} record{!IF(accountsCount == 1, '', 's')}</strong>
+	   							<apex:commandLink id="lnkAccountPrevious" rerender="accounts" oncomplete="hideOverlay();" onclick="displayOverlay();" action="{!decrementAccountPage}" title="Previous Page" style="text-decoration: none;"> 
+                                    <span class="glyphicon glyphicon-chevron-left"></span>
+							   </apex:commandLink>
+							   <apex:commandLink id="lnkAccountNext" rerender="accounts" oncomplete="hideOverlay();" onclick="displayOverlay();" action="{!incrementAccountPage}" title="Next Page" style="text-decoration: none;"> 
+                                    <span class="glyphicon glyphicon-chevron-right"></span>
+							   </apex:commandLink>
+	   						</div>
+	   						
+	   					</div>
+	   					<div class="items-container">
+	   					<apex:repeat id="rptAccounts" value="{!accounts}" var="a">
+	   						<div class="item-container">
+	   							<table id="tbl{!a.id}" class="table table-condensed table-striped{!IF(a['MyDayFlagged__c'],' flagged-account','')}">
+	   								<apex:repeat value="{!accountFields}" var="f">
+	   									<apex:outputPanel layout="none" rendered="{! f.fieldPath == firstAccountField}">
+		   									<tr>
+		   										<td class="text-right label-column"><strong>{!f.Label}</strong></td>
+		   										<td class="clearfix">
+							                  		<div class="pull-left">
+			   											<apex:outputField value="{!a[f.fieldPath]}" />
+			   										</div>
+			   										<div class="pull-right">
+			   											<apex:commandLink id="lnkAccountView" rerender="detail" oncomplete="hideOverlay(); show();" onclick="displayOverlay();" title="View Details" style="text-decoration: none;"> 
+		                                                    <apex:param name="accountId" value="{!a.Id}" assignTo="{!recordId}"/>
+															<span class="glyphicon glyphicon-eye-open"></span>
+													   </apex:commandLink>
+													   &nbsp;&nbsp;
+			   											<apex:commandLink id="lnkAccountFlag" action="{!flagAccount}" oncomplete="hideOverlay();" onclick="displayOverlay(); flagAccount(this,'{!a.Id}');" title="{!IF(a['MyDayFlagged__c'],'Remove Flag','Flag')}" style="text-decoration: none;"> 
+		                                                    <apex:param name="accountId" value="{!a.Id}" assignTo="{!recordId}"/>
+															<span id="spn{!a.Id}" class="glyphicon glyphicon-star{!IF(a['MyDayFlagged__c'],'','-empty')}"></span>
+													   </apex:commandLink>
+			   										</div>
+							                     </td>
+							                </tr>
+							             </apex:outputPanel>
+							             <apex:outputPanel layout="none" rendered="{! f.fieldPath != firstAccountField}">
+		   									<tr>
+		   										<td class="text-right label-column"><strong>{!f.Label}</strong></td>
+		   										<td>
+							                  		<apex:outputField value="{!a[f.fieldPath]}" />
+							                     </td>
+							                </tr>
+							             </apex:outputPanel>
+						              </apex:repeat>								
+	   							</table>
+	   						</div>
+	   					</apex:repeat>
+	   				</div>
+   					</apex:outputPanel>
+   				</div>
+   			</div><!-- Accounts Column -->
+   			
+   			<div class="{!IF(hideChatter,'col-md-4','col-md-3')}" id="opps-container">
+   				<div class="panel panel-opportunity">
+   					<div class="panel-heading">
+   						<div class="clearfix">
+	   						<h3 class="panel-title pull-left">Opportunities</h3>
+	   						<div class="new-container pull-left">
+	   							 <a href="/006/e?retURL=/apex/{!namespacePrefix}MyDayView" title="New Opportunity"><span class="glyphicon glyphicon-plus-sign"></span></a>
+	   						</div>
+   							<div class="pull-right text-right">
+	   							<apex:selectlist multiselect="false" size="1" value="{!oppViewId}">
+			                        <apex:selectoptions value="{!oppViews}" />
+	                         		<apex:actionsupport event="onchange" rerender="opps" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetOppPage}"/>               
+			                    </apex:selectlist>
+		                    </div>
+		                 </div>
+	                    <div style="margin-top: 5px;" class="text-right">
+   							<strong>Sort By </strong>
+   							<apex:selectlist multiselect="false" size="1"  value="{!oppSortField}">
+   								<apex:selectOption itemvalue="Amount" itemLabel="Amount"></apex:selectOption>  
+		                        <apex:selectOption itemvalue="CloseDate" itemLabel="Close Date"></apex:selectOption>
+		                        <apex:selectOption itemvalue="Name" itemLabel="Name"></apex:selectOption>
+		                        <apex:selectOption itemvalue="NextStep" itemLabel="Next Step"></apex:selectOption> 
+		                        <apex:actionsupport event="onchange" rerender="opps" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetOppPage}"/>                      
+		                    </apex:selectlist>  
+		                    &nbsp;
+		                    <apex:selectlist multiselect="false" size="1"  value="{!oppSortDirection}">
+		                        <apex:selectOption itemValue="ASC" itemLabel="Ascending"></apex:selectOption>
+		                        <apex:selectOption itemvalue="DESC" itemLabel="Descending"></apex:selectOption>
+		                        <apex:actionsupport event="onchange" rerender="opps" onsubmit="displayOverlay();" oncomplete="hideOverlay();" action="{!resetOppPage}"/> 
+		                    </apex:selectlist> 
+		                </div>
+   					</div>
+   					<apex:outputPanel id="opps">
+	   					<div class="panel-body clearfix">
+	   						<div class="pull-left">
+	   							<strong>{!IF(oppsCount == 0, 0 , (currentOppPage - 1) * 50 + 1)} - {!IF(oppsCount < 50, oppsCount, IF((50 * currentOppPage) > oppsCount, oppsCount, 50 * currentOppPage))} of {!oppsCount} record{!IF(oppsCount == 1, '', 's')}</strong>
+	   							<apex:commandLink id="lnkOppPrevious" rerender="opps" oncomplete="hideOverlay();" onclick="displayOverlay();" action="{!decrementOppPage}" title="Previous Page" style="text-decoration: none;"> 
+                                    <span class="glyphicon glyphicon-chevron-left"></span>
+							   </apex:commandLink>
+							   <apex:commandLink id="lnkOppNext" rerender="opps" oncomplete="hideOverlay();" onclick="displayOverlay();" action="{!incrementOppPage}" title="Next Page" style="text-decoration: none;"> 
+                                    <span class="glyphicon glyphicon-chevron-right"></span>
+							   </apex:commandLink>
+	   						</div>
+	   						
+	   					</div>
+	   					<div class="items-container">
+	   					<apex:repeat id="rptOpps" value="{!opps}" var="o">
+	   						<div class="item-container">
+	   							<table id="tbl{!o.id}" class="table table-condensed table-striped{!IF(o.MyDayFlagged__c,' flagged-opportunity','')}">
+	   								<tr>
+	   									<td class="text-right label-column"><strong>Name</strong></td>
+	   									<td class="clearfix">
+	   										<div class="pull-left">
+	   											{!o.Name}
+	   										</div>
+	   										<div class="pull-right">
+	   											<apex:commandLink id="lnkOppView" rerender="detail" oncomplete="hideOverlay(); show();" onclick="displayOverlay();" title="View Details" style="text-decoration: none;"> 
+                                                    <apex:param name="oppId" value="{!o.Id}" assignTo="{!recordId}"/>
+													<span class="glyphicon glyphicon-eye-open"></span>
+											   </apex:commandLink>
+											   &nbsp;&nbsp;
+	   											<apex:commandLink id="lnkOppFlag" action="{!flagOpp}" oncomplete="hideOverlay();" onclick="displayOverlay(); flagOpp(this, '{!o.Id}');" title="{!IF(o.MyDayFlagged__c,'Remove Flag','Flag')}" style="text-decoration: none;"> 
+                                                    <apex:param name="oppId" value="{!o.Id}" assignTo="{!recordId}"/>
+													<span id="spn{!o.Id}" class="glyphicon glyphicon-star{!IF(o.MyDayFlagged__c,'','-empty')}"></span>
+											   </apex:commandLink>
+	   										</div>
+	   									</td>
+	   								</tr>
+	   								<tr>
+	   									<td class="text-right"><strong>Stage</strong></td>
+	   									<td>{!o.StageName}</td>
+	   								</tr>
+	   								<tr>
+	   									<td class="text-right"><strong>Amount</strong></td>
+	   									<td><apex:outputField value="{!o.Amount}" /></td>
+	   								</tr>
+	   								<tr>
+	   									<td class="text-right"><strong>Close Date</strong></td>
+	   									<td><apex:outputField value="{!o.CloseDate}" /></td>
+	   								</tr>
+	   								<tr>
+	   									<td class="text-right"><strong>Next Step</strong></td>
+	   									<td>{!o.NextStep}</td>
+	   								</tr>
+	   							</table>
+	   						</div>
+	   					</apex:repeat>
+	   				</div>
+   					</apex:outputPanel>
+   				</div>
+   			</div><!-- Opportunities Column -->
+   			
+   			<apex:actionFunction name="refreshChatter" rerender="chatterFeed" />
+   			<apex:actionFunction name="saveChatterSettings" action="{!toggleChatter}" rerender="chatterFeed" />
+   			</apex:form>
+   			
+   			<div class="col-md-3"  id="chatter-container" style="display: {!IF(hideChatter,'none','block')}">
+   				<div class="panel panel-chatter">
+   					<div class="panel-heading clearfix">
+   						<h3 class="panel-title pull-left">Chatter</h3>
+   						<div class="new-container pull-left">
+   							<a href="#" title="Refresh" onclick="refreshChatter();"><span class="glyphicon glyphicon-refresh"></span></a>
+   							<div style="margin-top: 10px;">
+   								&nbsp;
+   							</div>
+   						</div>
+   						
+   					</div>
+   					<div class="panel-body">
+   						<div class="chatter-container">
+   							<chatter:newsfeed id="chatterFeed"/>
+   						</div>
+   					</div>
+   				</div>
+   			</div><!-- Chatter Column -->
+   		</div>
+   		<div id="footer" class="row">
+   	 		<div class="col-md-12 text-right">
+   	 			<a href="/{!objectPrefix}" title="Add/Edit Views">Add/Edit Views</a> | 
+   	 			<a href="#" onclick="hideChatter(); return false;" title="Hide Chatter" id="hideChatter" class="{!IF(hideChatter,'hide','show-inline')}">Hide Chatter</a>
+   	 			<a href="#" onclick="showChatter(); return false;" title="Show Chatter" id="showChatter" class="{!IF(hideChatter,'show-inline','hide')}" >Show Chatter</a>
+   	 		</div>
+   	 	</div><!-- Footer -->
+   	 </div><!-- Main -->
+   	 
+   	 
+   	 <div id="details" class="hide">
+		<div class="btg-force">
+			<div class="row">
+	   			<div id="closeTop" class="col-md-offset-4 col-md-4">
+					<a onclick="hide();" href="#" class="btn btn-primary btn-lg btn-block">
+			          Close
+			        </a>
+			    </div>
+			</div>
+        </div>
+         <apex:outputPanel id="detail" layout="block">
+        	<apex:detail id="recordDetail" title="false" inlineEdit="true" relatedList="true" showChatter="false" relatedListHover="true" subject="{!recordId}" />
+        </apex:outputPanel>
+        <div class="btg-force">
+			<div class="row">
+	   			<div id="closeBottom" class="col-md-offset-4 col-md-4">
+					<a onclick="hide();" href="#" class="btn btn-primary btn-lg btn-block">
+			          Close
+			        </a>
+			    </div>
+			</div>
+        </div>
+	</div>
+	 <script type="text/javascript">
+   		function displayOverlayText(labelText)
+        {        	
+        	$("#loadingLabel").html(labelText);
+        	 $("#overlay").attr('style','display: block;');
+        }
+        
+   		function displayOverlay()
+        {
+           displayOverlayText('Loading');
+        }
+    
+        function hideOverlay()
+        {	
+            $("#overlay").attr('style','display: none;');
+        }
+        		
+        function flagTask(ctrl, id)
+        {
+            if($("#spn" + id).attr('class').indexOf('-empty') >= 0)
+        	{
+            	$("#spn" + id).attr('class', $("#spn" + id).attr('class').replace('-empty',''));
+            	$("#tbl" + id).attr('class', $("#tbl" + id).attr('class') + ' flagged-task');
+            	$(ctrl).attr('title','Remove Flag');
+            }
+            else
+            {
+            	$("#spn" + id).attr('class', $("#spn" + id).attr('class') + '-empty');
+            	$("#tbl" + id).attr('class', $("#tbl" + id).attr('class').replace('flagged-task',''));
+            	$(ctrl).attr('title','Flag');
+            }
+        }
+    
+    	function flagAccount(ctrl, id)
+        {
+            if($("#spn" + id).attr('class').indexOf('-empty') >= 0)
+        	{
+            	$("#spn" + id).attr('class', $("#spn" + id).attr('class').replace('-empty',''));
+            	$("#tbl" + id).attr('class', $("#tbl" + id).attr('class') + ' flagged-account');
+            	$(ctrl).attr('title','Remove Flag');
+            }
+            else
+            {
+            	$("#spn" + id).attr('class', $("#spn" + id).attr('class') + '-empty');
+            	$("#tbl" + id).attr('class', $("#tbl" + id).attr('class').replace('flagged-account',''));
+            	$(ctrl).attr('title','Flag');
+            }
+        }
+    
+    	function flagOpp(ctrl, id)
+        {
+            if($("#spn" + id).attr('class').indexOf('-empty') >= 0)
+        	{
+            	$("#spn" + id).attr('class', $("#spn" + id).attr('class').replace('-empty',''));
+            	$("#tbl" + id).attr('class', $("#tbl" + id).attr('class') + ' flagged-opportunity');
+            	$(ctrl).attr('title','Remove Flag');
+            }
+            else
+            {
+            	$("#spn" + id).attr('class', $("#spn" + id).attr('class') + '-empty');
+            	$("#tbl" + id).attr('class', $("#tbl" + id).attr('class').replace('flagged-opportunity',''));
+            	$(ctrl).attr('title','Flag');
+            }
+        }
+        
+        function show()
+        {
+        	$('#details').show('slow'); 
+        	//$("body").animate({ scrollTop: 0 }, "fast");
+        	$('html, body').animate({scrollTop: $("#details").offset().top}, 'slow');
+        }
+        
+        function hide()
+        {
+        	//$('#main').toggle(); 
+        	$('#details').hide('slow'); 
+        }
+        
+        function showChatter()
+        {
+        	$('#chatter-container').show('slow'); 
+        	$('#tasks-container').attr('class','col-md-3');
+        	$('#accounts-container').attr('class','col-md-3');
+        	$('#opps-container').attr('class','col-md-3');
+        	$('#showChatter').attr('class','hide');
+        	$('#hideChatter').attr('class','show-inline');
+        	saveChatterSettings();
+        }
+        
+        function hideChatter()
+        {
+        	$('#chatter-container').hide('slow', function() {
+        		$('#tasks-container').attr('class','col-md-4');
+        		$('#accounts-container').attr('class','col-md-4');
+        		$('#opps-container').attr('class','col-md-4');
+        	}); 
+        	
+        	$('#showChatter').attr('class','show-inline');
+        	$('#hideChatter').attr('class','hide');
+        	saveChatterSettings();
+        }
+        
+        
+    </script>
+</apex:page>

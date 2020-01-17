@@ -1,0 +1,106 @@
+<apex:page standardController="Show_Publications__c" standardStylesheets="false" showHeader="false" sidebar="false" extensions="ShowpubRedirectController">
+    <apex:stylesheet value="{!URLFOR($Resource.slds, 'assets/styles/salesforce-lightning-design-system.css')}"/>
+    <apex:actionStatus id="actionStatus" onstart="showSpinner();" onstop="hideSpinner();" />
+    <div class="slds-spinner_container slds-hide" style="position:fixed;">
+        <div class="slds-spinner--brand slds-spinner slds-spinner--large" aria-hidden="false" role="alert">
+            <div class="slds-spinner__dot-a"></div>
+            <div class="slds-spinner__dot-b"></div>
+        </div>
+    </div>
+    <apex:outputPanel styleClass="bottomNavLinks" layout="block">
+        <a href="/apex/ShowPublicationFinancialSummary?id={!Show_Publications__c.Id}">← Financial Summary</a>&nbsp;&nbsp;
+        <a href="/apex/SalesJournal?id={!Show_Publications__c.Id}">← Sales Journal </a>
+    </apex:outputPanel>
+    <apex:outputPanel id="table">
+        <apex:pageBlock id="pb">
+            <apex:facet name="header">
+                <div class="pbHeader"><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="pbTitle"><h2 class="mainTitle"><a href="/{!show_publications__c.Id}">{!show_publications__c.Name}</a> &raquo; Invoice Distribution</h2></td><td>&nbsp;</td></tr></tbody></table></div>
+            </apex:facet>
+            
+            
+            <apex:form style="clear: left; padding-left: 3em;">
+            Select a receipt preference filter:&nbsp;
+                 <apex:SelectList multiselect="false" value="{!filter}" size="1">
+                        <apex:actionSupport event="onchange" action="{!changeFilter}" reRender="table, actionStatus" status="actionStatus"/>
+                        <apex:SelectOptions value="{!filterOptions}"/>
+                </apex:SelectList>
+            </apex:form>
+            <apex:outputPanel style="layout:block; clear:both; position:relative;" rendered="{!hasError}">
+                <div style="float:left; layout:block; clear:both; position:relative;" class="slds-notify_container">
+                    <div class="slds-notify slds-notify--toast slds-theme--error slds-theme--alert-texture" role="alert">
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading--small"><apex:pageMessages ></apex:pageMessages></h2>
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>   
+            <apex:outputPanel rendered="{!invoicesForDisplay.size > 0}">
+                <apex:pageBlockTable styleClass="slds-table slds-table--bordered slds-table--striped slds-no-row-hover" value="{!invoicesForDisplay}" var="i">
+                    <apex:column headerClass="slds-text-heading--label" headerValue="Invoice Name">
+                        <a href="/{!i.Id}">{!i.Name}</a>
+                    </apex:column>
+                    <apex:column headerClass="slds-text-heading--label" value="{!i.Product__r.Order.Account.Invoice_Receipt_Address__c}" headerValue="Receipt Address"/>
+                    <apex:column headerClass="slds-text-heading--label" value="{!i.Invoice_Preference__c}" headerValue="Receipt Preference"/>
+                    <apex:column headerClass="slds-text-heading--label" value="{!i.Product__r.Invoice_Receipt_Notes__c}" headerValue="Notes"/>
+                </apex:pageBlockTable>
+                
+            </apex:outputPanel>
+            
+            <apex:form rendered="{!invoicesForDisplay.size >0}">
+                <apex:commandLink action="{!first}" status="actionStatus" value="<<First | " reRender="table, actionStatus"/>
+                <apex:commandLink action="{!previous}" status="actionStatus" rendered="{!hPrev}" value="<Previous | " reRender="table, actionStatus"/>
+                <apex:selectList styleClass="slds-pickist" value="{!pageSelected}" multiselect="false" size="1">
+                    <apex:actionSupport event="onchange" action="{!pageSelect}" reRender="table, actionStatus" status="actionStatus"/>
+                    <apex:SelectOptions value="{!pageNumbers}" />
+                </apex:selectList>
+                <apex:commandLink action="{!next}" status="actionStatus" value=" Next>" rendered="{!hNext}" reRender="table, actionStatus"/>
+                <apex:commandLink action="{!last}" status="actionStatus" value=" | Last>>" reRender="table, actionStatus"/>
+            </apex:form>
+            <!--
+            <button onclick="window.open('https://conductor.congamerge.com/?MOID={!emailIdArray}&SessionId={!$Api.Session_ID}&ServerURL={!$Api.Partner_Server_URL_160}&URLFieldName={!emailFieldName}','Conga', 'width=700,height=450,menubar=0' );" class="slds-button slds-button--brand confirm">Distribute via Email</button>
+            <button onclick="window.open('https://conductor.congamerge.com/?MOID={!printIdArray}&SessionId={!$Api.Session_ID}&ServerURL={!$Api.Partner_Server_URL_160}&URLFieldName={!downloadFieldName}','Conga', 'width=700,height=450,menubar=0' );" class="slds-button slds-button--brand confirm">Download to local directory</button>
+            -->
+            <button onclick="window.open('https://conductor.congamerge.com?MOID={!emailIdArray}&sessionId={!$Api.Session_ID}&serverUrl={!$Api.Partner_Server_URL_290}&URLFieldName={!emailFieldName}','Conga', 'width=700,height=450,menubar=0' );" class="slds-button slds-button--brand confirm">Distribute via Email</button>
+            <button onclick="window.open('https://conductor.congamerge.com/?MOID={!printIdArray}&sessionId={!$Api.Session_ID}&serverUrl={!$Api.Partner_Server_URL_290}&URLFieldName={!downloadFieldName}','Conga', 'width=700,height=450,menubar=0' );" class="slds-button slds-button--brand confirm">Download to local directory</button>
+        </apex:pageBlock>
+    </apex:outputPanel>
+    
+    <script>
+    function showSpinner(){
+        console.log('showSpinner');
+        var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+        spinner.className = 'slds-spinner_container slds-show';
+    }
+    
+    function hideSpinner(){
+        console.log('hideSpinner');
+        var spinner = document.getElementsByClassName('slds-spinner_container')[0];
+        spinner.className = 'slds-spinner_container slds-hide';
+    }
+    </script>
+    <style>
+        table{
+        margin-top:.5em;
+        margin-bottom:.5em;
+        width: 100%;
+        }
+        .confirm{
+        position: relative;
+        left:75%;
+        }
+        .bottomNavLinks{
+        text-align:center;
+        width:100%;
+        font-size:1.25em;
+        }
+        .pbHeader{
+        float:left;
+        font-size: 1.25em;
+        padding-left: 0.25em;
+        padding-top: 0.5em;
+        }
+        .pbBody > span> table > tbody > tr:hover >td{
+        background-color:#99ccff;
+        }
+    </style>
+</apex:page>

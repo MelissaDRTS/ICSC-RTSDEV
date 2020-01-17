@@ -1,0 +1,69 @@
+<apex:page standardController="MyDayView__c" extensions="MyDayViewObjectEditController" docType="html-5.0"> 
+<apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"/>
+   <apex:includeScript value="{!URLFOR($Resource.MyDayResources, 'MyDayResources/bootstrap-3.0.2/js/bootstrap.min.js')}"/>
+   <apex:stylesheet value="{!URLFOR($Resource.MyDayResources, 'MyDayResources/bootstrap-3.0.2/css/bootstrap-btg-force.css')}"/>
+   <style>
+		.btg-force .panel-task{border-color: #aaaaaa;border-width: 1px;margin-bottom: 5px !important;border-top: 3px solid #56458c;}        
+        .btg-force .panel-lead{border-color: #aaaaaa;border-width: 1px;margin-bottom: 5px !important;border-top: 3px solid #e39321;}         
+        .btg-force .panel-opportunity{border-color: #aaaaaa;border-width: 1px;margin-bottom: 5px !important;border-top: 3px solid #e5c130;}
+        .btg-force .panel-chatter{border-color: #aaaaaa;border-width: 1px;margin-bottom: 5px !important;border-top: 3px solid #F45531;}
+        
+        .btg-force .panel-task > .panel-heading, .btg-force .panel-lead > .panel-heading, .btg-force .panel-opportunity > .panel-heading, .btg-force .panel-chatter > .panel-heading {color: #000000;background-color: #dddddd;border-color: #aaaaaa;padding: 5px 10px !important;}
+        .btg-force .panel-task > .panel-heading a, .btg-force .panel-lead > .panel-heading a, .btg-force .panel-opportunity > .panel-heading a, .btg-force .panel-chatter > .panel-heading a{color: #000000;}
+   		
+      	.overlay {position: fixed; top: 0; left: 0; height: 100%; width: 100%; z-index: 10; background-color: rgba(0,0,0,0.5);}
+        .white-box{width: 300px; height: 110px; position: fixed; top: 50%; left: 50%; margin-top: -100px; margin-left: -150px; background-color: #FFFFFF; border-radius: 5px; text-align: center; z-index: 11;}
+        .white-box img{width: 75px;}
+        #loadingLabel{font-weight: bold;}
+        
+        .new-container{margin-left: 5px;}
+        .item-container{margin: 0px 5px;}
+        .item-container table {border: 1px solid #dddddd;}
+        .label-column {width: 22%;}
+        .items-container {height:550px; overflow: auto; padding: 5px;}
+        
+        .chatter-container *, .chatter-container *:before, .chatter-container *:after {-webkit-box-sizing: content-box;-moz-box-sizing: content-box;box-sizing: content-box;}
+		.chatter-container .panel {margin-bottom: 0px;}
+		.chatter-container .publisherpollchoiceinput, .chatter-container .fileFormInputElement, .chatter-container .publishercontainer .contentPublisherSlideDown table.postInput {width: 95% !important;}
+    </style>
+	<div id="overlay" style="display: none;">
+	    <div class="overlay">
+	    </div>
+	    <div class="white-box">
+	        <img src="{!URLFOR($Resource.MyDayResources, 'MyDayResources/Loading_Animation.gif')}" alt="Loading" />
+	        <div>
+	            <span id="loadingLabel">Loading</span>
+	        </div>
+	    </div>
+	</div>	
+	<apex:form >		
+		<apex:actionFunction name="updateFields" rerender="fields,secondFields" />
+		<apex:pageBlock title="View" mode="edit">
+            <apex:pageBlockButtons >
+                <apex:commandButton action="{!save}" value="Save"/>
+                <apex:commandButton action="{!saveAndNew}" value="Save & New"/>
+                <apex:commandButton action="{!cancel}" value="Cancel" />
+            </apex:pageBlockButtons>
+            <apex:messages styleClass="errorMsg" />            
+            <apex:pageBlockSection title="Information" columns="1">
+                <apex:inputField value="{!view.Name}"/>
+                <apex:inputField value="{!view.Object__c}" onchange="updateFields()"/> 
+                <apex:inputField value="{!view.Private__c}"/>
+                <apex:inputField value="{!view.OwnedByMe__c}"/>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection title="Criteria" columns="3">
+            	<apex:selectList id="fields" value="{!view.Field__c}" multiselect="false" size="1">
+                    <apex:selectoptions value="{!objectFields}" />
+                </apex:selectList>
+                <apex:inputField value="{!view.Operation__c}"/>
+                <apex:inputField value="{!view.Value__c}"/>
+                
+                <apex:selectList id="secondFields" value="{!view.SecondField__c}" multiselect="false" size="1">
+                    <apex:selectoptions value="{!objectFields}" />
+                </apex:selectList>
+                <apex:inputField value="{!view.SecondOperation__c}"/>
+                <apex:inputField value="{!view.SecondValue__c}"/>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+	</apex:form>
+</apex:page>
